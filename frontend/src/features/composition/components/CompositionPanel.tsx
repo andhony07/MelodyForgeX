@@ -9,9 +9,12 @@ import { generateChordNotes } from '../generators/chordGenerator';
 import { generateMelody } from '../generators/melodyGenerator';
 import { generateArpeggio, ArpeggioPattern } from '../generators/arpeggioGenerator';
 import { MusicalKey } from '../../editor/types/studio';
-import { Sparkles, Music, Sliders, RefreshCw, Trash2 } from 'lucide-react';
+import { AICompositionPanel } from '../../ai/components/AICompositionPanel';
+import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench } from 'lucide-react';
 
 export const CompositionPanel: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'ai' | 'manual'>('ai');
+
   const {
     selectedScale,
     selectedKey,
@@ -119,7 +122,7 @@ export const CompositionPanel: React.FC = () => {
 
   const handleClearGenerated = () => {
     const updatedNotesMap = { ...notesByTrackId };
-    ['Generated Chords', 'Generated Melody', 'Generated Arpeggio'].forEach((name) => {
+    ['Generated Chords', 'Generated Melody', 'Generated Arpeggio', 'AI Chords', 'AI Melody', 'AI Arpeggio'].forEach((name) => {
       const t = tracks.find((tr) => tr.name === name);
       if (t) {
         delete updatedNotesMap[t.id];
@@ -130,160 +133,182 @@ export const CompositionPanel: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#181b24] border-l border-[#2e3444] w-72 flex flex-col justify-between p-3 select-none text-xs font-sans">
-      <div className="space-y-4 overflow-y-auto pr-1">
-        {/* Panel Header */}
-        <div className="flex items-center justify-between border-b border-[#2e3444] pb-2">
-          <div className="flex items-center gap-2 font-bold text-gray-100">
-            <Sparkles className="w-4 h-4 text-indigo-400" />
-            <span>Composition Engine</span>
-          </div>
-          <span className="px-1.5 py-0.5 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-[10px] font-mono rounded">
-            Phase 5
-          </span>
+    <div className="bg-[#181b24] border-l border-[#2e3444] w-80 flex flex-col justify-between p-3 select-none text-xs font-sans">
+      <div className="space-y-3 overflow-y-auto pr-1">
+        {/* Header Tabs */}
+        <div className="flex items-center gap-1 bg-[#0f1117] p-1 rounded-lg border border-[#2e3444]">
+          <button
+            onClick={() => setActiveTab('ai')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              activeTab === 'ai'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Bot className="w-3.5 h-3.5" />
+            <span>AI Composer</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('manual')}
+            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+              activeTab === 'manual'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Wrench className="w-3.5 h-3.5" />
+            <span>Phase 5 Engine</span>
+          </button>
         </div>
 
-        {/* Key & Scale Selection */}
-        <div className="space-y-2">
-          <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-            Key & Scale System
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <span className="text-[10px] text-gray-500 block mb-0.5">Key</span>
+        {/* Tab Content */}
+        {activeTab === 'ai' ? (
+          <AICompositionPanel />
+        ) : (
+          <div className="space-y-4">
+            {/* Key & Scale Selection */}
+            <div className="space-y-2">
+              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Key & Scale System
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-[10px] text-gray-500 block mb-0.5">Key</span>
+                  <select
+                    value={selectedKey}
+                    onChange={(e) => {
+                      const k = e.target.value as MusicalKey;
+                      setCompositionKey(k);
+                      setKey(k);
+                    }}
+                    className="w-full bg-[#0f1117] border border-[#2e3444] rounded px-2 py-1 text-xs text-cyan-400 font-mono font-bold outline-hidden"
+                  >
+                    {['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <span className="text-[10px] text-gray-500 block mb-0.5">Scale</span>
+                  <select
+                    value={selectedScale}
+                    onChange={(e) => setScale(e.target.value as ScaleType)}
+                    className="w-full bg-[#0f1117] border border-[#2e3444] rounded px-2 py-1 text-xs text-emerald-400 font-mono font-bold outline-hidden"
+                  >
+                    {Object.keys(SCALES).map((sc) => (
+                      <option key={sc} value={sc}>
+                        {sc}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <p className="text-[10px] text-gray-500 line-clamp-2">
+                {SCALES[selectedScale]?.description}
+              </p>
+            </div>
+
+            {/* Chord Progression Selector */}
+            <div className="space-y-1.5">
+              <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+                Chord Progression
+              </label>
               <select
-                value={selectedKey}
+                value={activeProgression.id}
                 onChange={(e) => {
-                  const k = e.target.value as MusicalKey;
-                  setCompositionKey(k);
-                  setKey(k);
+                  const p = PROGRESSION_TEMPLATES.find((pt) => pt.id === e.target.value);
+                  if (p) setProgression(p);
                 }}
-                className="w-full bg-[#0f1117] border border-[#2e3444] rounded px-2 py-1 text-xs text-cyan-400 font-mono font-bold outline-hidden"
+                className="w-full bg-[#0f1117] border border-[#2e3444] rounded px-2 py-1.5 text-xs text-indigo-300 font-semibold outline-hidden"
               >
-                {['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'].map((k) => (
-                  <option key={k} value={k}>
-                    {k}
+                {PROGRESSION_TEMPLATES.map((pt) => (
+                  <option key={pt.id} value={pt.id}>
+                    {pt.name}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div>
-              <span className="text-[10px] text-gray-500 block mb-0.5">Scale</span>
-              <select
-                value={selectedScale}
-                onChange={(e) => setScale(e.target.value as ScaleType)}
-                className="w-full bg-[#0f1117] border border-[#2e3444] rounded px-2 py-1 text-xs text-emerald-400 font-mono font-bold outline-hidden"
-              >
-                {Object.keys(SCALES).map((sc) => (
-                  <option key={sc} value={sc}>
-                    {sc}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <p className="text-[10px] text-gray-500 line-clamp-2">
-            {SCALES[selectedScale]?.description}
-          </p>
-        </div>
+            {/* Seed & Parameters */}
+            <div className="space-y-2 bg-[#0f1117] p-2.5 rounded-lg border border-[#2e3444]">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase">Deterministic Seed</span>
+                <button
+                  onClick={() => setSeed(Math.floor(Math.random() * 90000) + 10000)}
+                  className="p-1 text-gray-400 hover:text-indigo-400 rounded hover:bg-[#181b24]"
+                  title="Randomize Seed"
+                >
+                  <RefreshCw className="w-3 h-3" />
+                </button>
+              </div>
+              <input
+                type="number"
+                value={seed}
+                onChange={(e) => setSeed(parseInt(e.target.value) || 12345)}
+                className="w-full bg-[#181b24] border border-[#2e3444] rounded px-2 py-1 text-xs text-gray-200 font-mono outline-hidden"
+              />
 
-        {/* Chord Progression Selector */}
-        <div className="space-y-1.5">
-          <label className="block text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
-            Chord Progression
-          </label>
-          <select
-            value={activeProgression.id}
-            onChange={(e) => {
-              const p = PROGRESSION_TEMPLATES.find((pt) => pt.id === e.target.value);
-              if (p) setProgression(p);
-            }}
-            className="w-full bg-[#0f1117] border border-[#2e3444] rounded px-2 py-1.5 text-xs text-indigo-300 font-semibold outline-hidden"
-          >
-            {PROGRESSION_TEMPLATES.map((pt) => (
-              <option key={pt.id} value={pt.id}>
-                {pt.name}
-              </option>
-            ))}
-          </select>
-        </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <div>
+                  <span className="text-[10px] text-gray-500 block mb-0.5">Melody Density</span>
+                  <select
+                    value={density}
+                    onChange={(e) => setDensity(e.target.value as 'low' | 'medium' | 'high')}
+                    className="w-full bg-[#181b24] border border-[#2e3444] rounded px-1.5 py-1 text-[11px] text-gray-300 outline-hidden"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
 
-        {/* Seed & Parameters */}
-        <div className="space-y-2 bg-[#0f1117] p-2.5 rounded-lg border border-[#2e3444]">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-semibold text-gray-400 uppercase">Deterministic Seed</span>
-            <button
-              onClick={() => setSeed(Math.floor(Math.random() * 90000) + 10000)}
-              className="p-1 text-gray-400 hover:text-indigo-400 rounded hover:bg-[#181b24]"
-              title="Randomize Seed"
-            >
-              <RefreshCw className="w-3 h-3" />
-            </button>
-          </div>
-          <input
-            type="number"
-            value={seed}
-            onChange={(e) => setSeed(parseInt(e.target.value) || 12345)}
-            className="w-full bg-[#181b24] border border-[#2e3444] rounded px-2 py-1 text-xs text-gray-200 font-mono outline-hidden"
-          />
-
-          <div className="grid grid-cols-2 gap-2 pt-1">
-            <div>
-              <span className="text-[10px] text-gray-500 block mb-0.5">Melody Density</span>
-              <select
-                value={density}
-                onChange={(e) => setDensity(e.target.value as 'low' | 'medium' | 'high')}
-                className="w-full bg-[#181b24] border border-[#2e3444] rounded px-1.5 py-1 text-[11px] text-gray-300 outline-hidden"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-              </select>
+                <div>
+                  <span className="text-[10px] text-gray-500 block mb-0.5">Arp Pattern</span>
+                  <select
+                    value={arpeggioPattern}
+                    onChange={(e) => setArpeggioPattern(e.target.value as ArpeggioPattern)}
+                    className="w-full bg-[#181b24] border border-[#2e3444] rounded px-1.5 py-1 text-[11px] text-gray-300 outline-hidden"
+                  >
+                    <option value="Up">Up</option>
+                    <option value="Down">Down</option>
+                    <option value="UpDown">Up/Down</option>
+                    <option value="Random">Random</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <span className="text-[10px] text-gray-500 block mb-0.5">Arp Pattern</span>
-              <select
-                value={arpeggioPattern}
-                onChange={(e) => setArpeggioPattern(e.target.value as ArpeggioPattern)}
-                className="w-full bg-[#181b24] border border-[#2e3444] rounded px-1.5 py-1 text-[11px] text-gray-300 outline-hidden"
+            {/* Generator Buttons */}
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={handleGenerateChords}
+                className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all"
               >
-                <option value="Up">Up</option>
-                <option value="Down">Down</option>
-                <option value="UpDown">Up/Down</option>
-                <option value="Random">Random</option>
-              </select>
+                <Music className="w-3.5 h-3.5" />
+                Generate Chords
+              </button>
+
+              <button
+                onClick={handleGenerateMelody}
+                className="w-full flex items-center justify-center gap-2 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-cyan-600/20 transition-all"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                Generate Melody
+              </button>
+
+              <button
+                onClick={handleGenerateArpeggio}
+                className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-emerald-600/20 transition-all"
+              >
+                <Sliders className="w-3.5 h-3.5" />
+                Generate Arpeggio
+              </button>
             </div>
           </div>
-        </div>
-
-        {/* Generator Buttons */}
-        <div className="space-y-2 pt-1">
-          <button
-            onClick={handleGenerateChords}
-            className="w-full flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all"
-          >
-            <Music className="w-3.5 h-3.5" />
-            Generate Chords
-          </button>
-
-          <button
-            onClick={handleGenerateMelody}
-            className="w-full flex items-center justify-center gap-2 py-2 bg-cyan-600 hover:bg-cyan-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-cyan-600/20 transition-all"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            Generate Melody
-          </button>
-
-          <button
-            onClick={handleGenerateArpeggio}
-            className="w-full flex items-center justify-center gap-2 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-md shadow-emerald-600/20 transition-all"
-          >
-            <Sliders className="w-3.5 h-3.5" />
-            Generate Arpeggio
-          </button>
-        </div>
+        )}
       </div>
 
       {/* Clear Generated Content Button */}
