@@ -150,9 +150,16 @@ export class ToneAudioEngine {
     Tone.Transport.bpm.value = clampedBpm;
   }
 
-  public setLoop(enabled: boolean): void {
+  public setLoop(enabled: boolean, startBeat = 1.0, endBeat?: number): void {
     Tone.Transport.loop = enabled;
-    Tone.Transport.loopStart = 0;
+    const bpm = Tone.Transport.bpm.value;
+    const startSec = Math.max(0, (startBeat - 1.0) * (60 / bpm));
+    Tone.Transport.loopStart = startSec;
+
+    if (endBeat !== undefined) {
+      const endSec = Math.max(startSec + 0.1, (endBeat - 1.0) * (60 / bpm));
+      Tone.Transport.loopEnd = endSec;
+    }
   }
 
   public async previewNote(track: Track | null, pitch: number, durationBeats = 0.5, velocity = 100): Promise<void> {

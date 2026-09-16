@@ -1,5 +1,6 @@
 import { runCompositionEngineTests } from './features/composition/__tests__/composition.test';
 import { runAIEngineTests } from './features/ai/__tests__/ai.test';
+import { runArrangementTests } from './features/arrangement/__tests__/arrangement.test';
 
 console.log('Running MelodyForge Test Suites...\n');
 
@@ -12,8 +13,12 @@ try {
   console.log(`Phase 6 AI Composition Engine Tests: ${aiResult.passed}/${aiResult.total} PASSED.`);
   aiResult.logs.forEach((log) => console.log(log));
 
-  const totalPassed = compResult.passed + aiResult.passed;
-  const totalTests = compResult.total + aiResult.total;
+  const arrResult = runArrangementTests();
+  console.log(`Phase 7 Arrangement Engine Tests: ${arrResult.passed}/${arrResult.total} PASSED.`);
+  arrResult.logs.forEach((log) => console.log(log));
+
+  const totalPassed = compResult.passed + aiResult.passed + arrResult.passed;
+  const totalTests = compResult.total + aiResult.total + arrResult.total;
   console.log(`\nALL SUITES PASSED: ${totalPassed}/${totalTests} tests succeeded.`);
 
   process.exit(0);

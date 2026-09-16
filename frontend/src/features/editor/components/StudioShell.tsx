@@ -5,9 +5,12 @@ import { TrackList } from './TrackList';
 import { PianoRollContainer } from './PianoRollContainer';
 import { CompositionPanel } from '../../composition/components/CompositionPanel';
 import { StudioStatusBar } from './StudioStatusBar';
+import { ArrangementToolbar } from '../../arrangement/components/ArrangementToolbar';
 import { useStudioStore } from '../stores/useStudioStore';
 import { usePianoRollStore } from '../stores/usePianoRollStore';
 import { useAudioStore } from '../../audio/stores/useAudioStore';
+import { useArrangementStore } from '../../arrangement/stores/useArrangementStore';
+import { sectionToBeats } from '../../arrangement/utils/arrangementUtils';
 
 export const StudioShell: React.FC = () => {
   const {
@@ -22,11 +25,25 @@ export const StudioShell: React.FC = () => {
 
   const { notesByTrackId } = usePianoRollStore();
   const { syncAudio, play: audioPlay, stop: audioStop } = useAudioStore();
+  const { sections, loopSectionId } = useArrangementStore();
+
+  // Derive section loop bounds if active
+  let loopStartBeat = 1.0;
+  let loopEndBeat: number | undefined = undefined;
+
+  if (loopSectionId) {
+    const loopSec = sections.find((s) => s.id === loopSectionId);
+    if (loopSec) {
+      const bounds = sectionToBeats(loopSec);
+      loopStartBeat = bounds.startBeat;
+      loopEndBeat = bounds.endBeat;
+    }
+  }
 
   // Keep Audio Engine synchronized with active tracks, notes, tempo, and loop bounds
   useEffect(() => {
-    syncAudio(tracks, notesByTrackId, tempo, isLooping);
-  }, [tracks, notesByTrackId, tempo, isLooping, syncAudio]);
+    syncAudio(tracks, notesByTrackId, tempo, isLooping, loopStartBeat, loopEndBeat);
+  }, [tracks, notesByTrackId, tempo, isLooping, loopStartBeat, loopEndBeat, syncAudio]);
 
   useEffect(() => {
     const handleKeyDown = async (e: KeyboardEvent) => {
@@ -70,16 +87,17 @@ export const StudioShell: React.FC = () => {
     <div className="h-full flex flex-col bg-[#0f1117] text-gray-100 overflow-hidden select-none">
       <StudioHeader />
       <TransportBar />
+      <ArrangementToolbar />
       <div className="flex-1 flex overflow-hidden">
         {/* Main Workspace (TrackList + PianoRoll) */}
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top: Track Headers & Track Lanes */}
-          <div className="h-[40%] flex flex-col overflow-hidden">
+          <div className="h-[45%] flex flex-col overflow-hidden">
             <TrackList />
           </div>
 
           {/* Bottom: Piano Roll Editor */}
-          <div className="h-[60%] flex flex-col overflow-hidden">
+          <div className="h-[55%] flex flex-col overflow-hidden">
             <PianoRollContainer />
           </div>
         </div>

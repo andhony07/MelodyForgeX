@@ -13,7 +13,14 @@ interface AudioState {
   pause: () => void;
   stop: () => void;
   seek: (beat: number) => void;
-  syncAudio: (tracks: Track[], notesByTrackId: Record<string, Note[]>, tempo: number, isLooping: boolean) => void;
+  syncAudio: (
+    tracks: Track[],
+    notesByTrackId: Record<string, Note[]>,
+    tempo: number,
+    isLooping: boolean,
+    loopStartBeat?: number,
+    loopEndBeat?: number
+  ) => void;
   previewNote: (track: Track | null, pitch: number, durationBeats?: number, velocity?: number) => Promise<void>;
 }
 
@@ -50,10 +57,17 @@ export const useAudioStore = create<AudioState>((set) => {
       audioEngine.seekToBeat(beat);
     },
 
-    syncAudio: (tracks: Track[], notesByTrackId: Record<string, Note[]>, tempo: number, isLooping: boolean) => {
+    syncAudio: (
+      tracks: Track[],
+      notesByTrackId: Record<string, Note[]>,
+      tempo: number,
+      isLooping: boolean,
+      loopStartBeat = 1.0,
+      loopEndBeat?: number
+    ) => {
       try {
         audioEngine.setTempo(tempo);
-        audioEngine.setLoop(isLooping);
+        audioEngine.setLoop(isLooping, loopStartBeat, loopEndBeat);
         audioEngine.syncTracksAndNotes(tracks, notesByTrackId);
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Audio synchronization error';
