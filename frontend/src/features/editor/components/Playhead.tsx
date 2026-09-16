@@ -1,29 +1,22 @@
 import React, { useEffect, useRef } from 'react';
 import { useStudioStore } from '../stores/useStudioStore';
+import { ToneAudioEngine } from '../../audio/engine/ToneAudioEngine';
 
 interface PlayheadProps {
   measureWidth: number;
 }
 
 export const Playhead: React.FC<PlayheadProps> = ({ measureWidth }) => {
-  const { isPlaying, playheadPosition, tempo, stepPlayhead } = useStudioStore();
+  const { isPlaying, playheadPosition, setPlayheadPosition } = useStudioStore();
   const animationFrameRef = useRef<number | null>(null);
-  const lastTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (isPlaying) {
-      lastTimeRef.current = performance.now();
+      const audioEngine = ToneAudioEngine.getInstance();
 
-      const animate = (time: number) => {
-        if (lastTimeRef.current !== null) {
-          const deltaSec = (time - lastTimeRef.current) / 1000;
-          // Beats per second = tempo / 60
-          // Measures per second = (tempo / 60) / 4 in 4/4 time
-          const measuresPerSec = tempo / 240;
-          const deltaMeasures = deltaSec * measuresPerSec;
-          stepPlayhead(deltaMeasures);
-        }
-        lastTimeRef.current = time;
+      const animate = () => {
+        const currentBeat = audioEngine.getCurrentBeat();
+        setPlayheadPosition(currentBeat);
         animationFrameRef.current = requestAnimationFrame(animate);
       };
 
@@ -32,7 +25,6 @@ export const Playhead: React.FC<PlayheadProps> = ({ measureWidth }) => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      lastTimeRef.current = null;
     }
 
     return () => {
@@ -40,7 +32,7 @@ export const Playhead: React.FC<PlayheadProps> = ({ measureWidth }) => {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isPlaying, tempo, stepPlayhead]);
+  }, [isPlaying, setPlayheadPosition]);
 
   // Position calculation: measure 1 is at 0px offset
   const leftPx = (playheadPosition - 1.0) * measureWidth;

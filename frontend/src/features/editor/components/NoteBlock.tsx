@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { Note } from '../types/note';
 import { usePianoRollStore } from '../stores/usePianoRollStore';
+import { useStudioStore } from '../stores/useStudioStore';
+import { useAudioStore } from '../../audio/stores/useAudioStore';
 import { MAX_MIDI_PITCH, MIN_MIDI_PITCH, midiToNoteName, snapBeat } from '../constants/note';
 
 interface NoteBlockProps {
@@ -14,6 +16,7 @@ export const NoteBlock: React.FC<NoteBlockProps> = ({
   rowHeight,
   trackColor = '#6366f1',
 }) => {
+  const { selectedTrackId, tracks } = useStudioStore();
   const {
     selectedNoteIds,
     pixelsPerBeat,
@@ -23,6 +26,9 @@ export const NoteBlock: React.FC<NoteBlockProps> = ({
     updateNote,
     deleteNote,
   } = usePianoRollStore();
+
+  const previewNote = useAudioStore((state) => state.previewNote);
+  const activeTrack = tracks.find((t) => t.id === selectedTrackId) || null;
 
   const noteRef = useRef<HTMLDivElement>(null);
   const isSelected = selectedNoteIds.includes(note.id);
@@ -40,6 +46,7 @@ export const NoteBlock: React.FC<NoteBlockProps> = ({
       return;
     }
     selectNote(note.id, e.shiftKey);
+    previewNote(activeTrack, note.pitch, 0.5, note.velocity);
   };
 
   // Handle Note Dragging (Move pitch/beat)
@@ -64,6 +71,10 @@ export const NoteBlock: React.FC<NoteBlockProps> = ({
       // Convert delta pixels to pitch rows
       const deltaRows = Math.round(deltaY / rowHeight);
       const newPitch = Math.max(MIN_MIDI_PITCH, Math.min(MAX_MIDI_PITCH, initialPitch - deltaRows));
+
+      if (newPitch !== note.pitch) {
+        previewNote(activeTrack, newPitch, 0.3, note.velocity);
+      }
 
       updateNote(note.id, {
         startBeat: newBeat,

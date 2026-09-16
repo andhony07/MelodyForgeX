@@ -1,6 +1,7 @@
 import React from 'react';
 import { Play, Pause, Square, Repeat } from 'lucide-react';
 import { useStudioStore } from '../stores/useStudioStore';
+import { useAudioStore } from '../../audio/stores/useAudioStore';
 import { MusicalKey, KeyMode, TimeSignature } from '../types/studio';
 
 export const TransportBar: React.FC = () => {
@@ -21,6 +22,23 @@ export const TransportBar: React.FC = () => {
     setTimeSignature,
   } = useStudioStore();
 
+  const { play: audioPlay, pause: audioPause, stop: audioStop, audioError } = useAudioStore();
+
+  const handlePlayToggle = async () => {
+    if (isPlaying) {
+      audioPause();
+      togglePlay();
+    } else {
+      await audioPlay();
+      togglePlay();
+    }
+  };
+
+  const handleStop = () => {
+    audioStop();
+    stop();
+  };
+
   // Format playhead position (measures and beats) e.g. Measure 01 : Beat 1
   const measure = Math.floor(playheadPosition);
   const beatFraction = playheadPosition - measure;
@@ -34,7 +52,7 @@ export const TransportBar: React.FC = () => {
       <div className="flex items-center gap-4">
         <div className="flex items-center gap-1 bg-[#0f1117] p-1.5 rounded-lg border border-[#2e3444]">
           <button
-            onClick={togglePlay}
+            onClick={handlePlayToggle}
             className={`p-2 rounded-md transition-colors ${
               isPlaying
                 ? 'bg-emerald-500 text-white shadow-sm shadow-emerald-500/30'
@@ -46,7 +64,7 @@ export const TransportBar: React.FC = () => {
           </button>
 
           <button
-            onClick={stop}
+            onClick={handleStop}
             className="p-2 rounded-md hover:bg-[#202430] text-gray-400 hover:text-gray-100 transition-colors"
             title="Stop (S)"
           >
@@ -78,6 +96,12 @@ export const TransportBar: React.FC = () => {
             <span className="text-base font-bold text-gray-100">{beat}</span>
           </div>
         </div>
+
+        {audioError && (
+          <div className="px-2.5 py-1 bg-rose-500/10 border border-rose-500/30 rounded text-rose-400 text-[11px]">
+            {audioError}
+          </div>
+        )}
       </div>
 
       {/* Center/Right: Song Parameters (Tempo, Key, Time Sig) */}

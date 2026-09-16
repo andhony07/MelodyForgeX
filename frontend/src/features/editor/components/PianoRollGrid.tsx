@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { usePianoRollStore } from '../stores/usePianoRollStore';
 import { useStudioStore } from '../stores/useStudioStore';
+import { useAudioStore } from '../../audio/stores/useAudioStore';
 import { PITCH_LIST, isBlackKey, snapBeat } from '../constants/note';
 import { NoteBlock } from './NoteBlock';
 
@@ -23,8 +24,9 @@ export const PianoRollGrid: React.FC<PianoRollGridProps> = ({
     addNote,
     clearSelection,
   } = usePianoRollStore();
+  const previewNote = useAudioStore((state) => state.previewNote);
 
-  const activeTrack = tracks.find((t) => t.id === selectedTrackId);
+  const activeTrack = tracks.find((t) => t.id === selectedTrackId) || null;
   const currentNotes = selectedTrackId ? notesByTrackId[selectedTrackId] || [] : [];
 
   const totalBeats = totalMeasures * 4;
@@ -53,6 +55,8 @@ export const PianoRollGrid: React.FC<PianoRollGridProps> = ({
         durationBeats: 1.0, // Default 1 quarter note duration
         velocity: 100,
       });
+
+      previewNote(activeTrack, pitch, 0.5, 100);
     } else if (activeTool === 'select') {
       clearSelection();
     }
