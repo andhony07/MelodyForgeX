@@ -10,10 +10,11 @@ import { generateMelody } from '../generators/melodyGenerator';
 import { generateArpeggio, ArpeggioPattern } from '../generators/arpeggioGenerator';
 import { MusicalKey } from '../../editor/types/studio';
 import { AICompositionPanel } from '../../ai/components/AICompositionPanel';
-import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench } from 'lucide-react';
+import { ArrangementAssistantPanel } from '../../arrangement/components/ArrangementAssistantPanel';
+import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench, BarChart3 } from 'lucide-react';
 
 export const CompositionPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ai' | 'manual'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'assistant'>('ai');
 
   const {
     selectedScale,
@@ -139,32 +140,46 @@ export const CompositionPanel: React.FC = () => {
         <div className="flex items-center gap-1 bg-[#0f1117] p-1 rounded-lg border border-[#2e3444]">
           <button
             onClick={() => setActiveTab('ai')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
               activeTab === 'ai'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
             <Bot className="w-3.5 h-3.5" />
-            <span>AI Composer</span>
+            <span>AI</span>
           </button>
           <button
             onClick={() => setActiveTab('manual')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-md text-xs font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
               activeTab === 'manual'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
             <Wrench className="w-3.5 h-3.5" />
-            <span>Phase 5 Engine</span>
+            <span>Phase 5</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('assistant')}
+            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[11px] font-semibold transition-all ${
+              activeTab === 'assistant'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            <span>Arranger</span>
           </button>
         </div>
 
         {/* Tab Content */}
         {activeTab === 'ai' ? (
           <AICompositionPanel />
+        ) : activeTab === 'assistant' ? (
+          <ArrangementAssistantPanel />
         ) : (
+
           <div className="space-y-4">
             {/* Key & Scale Selection */}
             <div className="space-y-2">

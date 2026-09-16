@@ -3,6 +3,7 @@ import { runAIEngineTests } from './features/ai/__tests__/ai.test';
 import { runArrangementTests } from './features/arrangement/__tests__/arrangement.test';
 import { runMIDITests } from './features/midi/__tests__/midi.test';
 import { runAutomationTests } from './features/arrangement/__tests__/automation.test';
+import { runArrangementIntelligenceTests } from './features/arrangement/__tests__/intelligence.test';
 
 console.log('Running MelodyForge Test Suites...\n');
 
@@ -27,8 +28,26 @@ try {
   console.log(`Phase 9 Advanced Arrangement & Automation Engine Tests: ${autoResult.passed}/${autoResult.total} PASSED.`);
   autoResult.logs.forEach((log) => console.log(log));
 
-  const totalPassed = compResult.passed + aiResult.passed + arrResult.passed + midiResult.passed + autoResult.passed;
-  const totalTests = compResult.total + aiResult.total + arrResult.total + midiResult.total + autoResult.total;
+  const intelResult = runArrangementIntelligenceTests();
+  console.log(`Phase 10 Smart Arrangement & Musical Intelligence Tests: ${intelResult.passed}/${intelResult.total} PASSED.`);
+  intelResult.logs.forEach((log) => console.log(log));
+
+  const totalPassed =
+    compResult.passed +
+    aiResult.passed +
+    arrResult.passed +
+    midiResult.passed +
+    autoResult.passed +
+    intelResult.passed;
+
+  const totalTests =
+    compResult.total +
+    aiResult.total +
+    arrResult.total +
+    midiResult.total +
+    autoResult.total +
+    intelResult.total;
+
   console.log(`\nALL SUITES PASSED: ${totalPassed}/${totalTests} tests succeeded.`);
 
   process.exit(0);
