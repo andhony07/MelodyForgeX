@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { StudioHeader } from './StudioHeader';
 import { TransportBar } from './TransportBar';
 import { TrackList } from './TrackList';
+import { PianoRollContainer } from './PianoRollContainer';
 import { StudioStatusBar } from './StudioStatusBar';
 import { useStudioStore } from '../stores/useStudioStore';
 
@@ -48,7 +49,17 @@ export const StudioShell: React.FC = () => {
     <div className="h-full flex flex-col bg-[#0f1117] text-gray-100 overflow-hidden select-none">
       <StudioHeader />
       <TransportBar />
-      <TrackList />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Top: Track Headers & Track Lanes */}
+        <div className="h-[40%] flex flex-col overflow-hidden">
+          <TrackList />
+        </div>
+
+        {/* Bottom: Piano Roll Editor */}
+        <div className="h-[60%] flex flex-col overflow-hidden">
+          <PianoRollContainer />
+        </div>
+      </div>
       <StudioStatusBar />
     </div>
   );
