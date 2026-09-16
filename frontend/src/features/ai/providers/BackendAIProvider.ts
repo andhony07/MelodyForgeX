@@ -4,7 +4,7 @@ import { CompositionRequest } from '../types/compositionRequest';
 import { AICompositionResponse } from '../types/compositionResponse';
 import { parseAndValidateCompositionResponse } from '../parsers/compositionParser';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api';
+const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8000/api';
 
 export class BackendAIProvider implements AIProvider {
   async generateComposition(request: CompositionRequest): Promise<AICompositionResponse> {

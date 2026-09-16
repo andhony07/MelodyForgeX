@@ -1,6 +1,7 @@
 import { runCompositionEngineTests } from './features/composition/__tests__/composition.test';
 import { runAIEngineTests } from './features/ai/__tests__/ai.test';
 import { runArrangementTests } from './features/arrangement/__tests__/arrangement.test';
+import { runMIDITests } from './features/midi/__tests__/midi.test';
 
 console.log('Running MelodyForge Test Suites...\n');
 
@@ -17,8 +18,12 @@ try {
   console.log(`Phase 7 Arrangement Engine Tests: ${arrResult.passed}/${arrResult.total} PASSED.`);
   arrResult.logs.forEach((log) => console.log(log));
 
-  const totalPassed = compResult.passed + aiResult.passed + arrResult.passed;
-  const totalTests = compResult.total + aiResult.total + arrResult.total;
+  const midiResult = runMIDITests();
+  console.log(`Phase 8 MIDI & Project Interchange Tests: ${midiResult.passed}/${midiResult.total} PASSED.`);
+  midiResult.logs.forEach((log) => console.log(log));
+
+  const totalPassed = compResult.passed + aiResult.passed + arrResult.passed + midiResult.passed;
+  const totalTests = compResult.total + aiResult.total + arrResult.total + midiResult.total;
   console.log(`\nALL SUITES PASSED: ${totalPassed}/${totalTests} tests succeeded.`);
 
   process.exit(0);
@@ -27,3 +32,4 @@ try {
   console.error('Test Suite Failed:', errorMsg);
   process.exit(1);
 }
+

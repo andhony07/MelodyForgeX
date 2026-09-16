@@ -11,7 +11,7 @@ export class GeminiProvider implements AIProvider {
   private backendFallback: BackendAIProvider;
 
   constructor() {
-    this.apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
+    this.apiKey = import.meta.env?.VITE_GEMINI_API_KEY || '';
     this.backendFallback = new BackendAIProvider();
   }
 
