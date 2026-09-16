@@ -5,6 +5,7 @@ import { useAICompositionStore, AIHistoryItem } from '../../ai/stores/useAICompo
 import { Track, MusicalKey, KeyMode, TimeSignature } from '../../editor/types/studio';
 import { Note } from '../../editor/types/note';
 import { ArrangementSection } from '../../arrangement/types/arrangementSection';
+import { AutomationLane } from '../../arrangement/types/automation';
 
 export interface MelodyForgeProjectPayload {
   version: number;
@@ -27,6 +28,8 @@ export interface MelodyForgeProjectPayload {
   arrangement: {
     sections: ArrangementSection[];
     totalBars: number;
+    automationLanes?: AutomationLane[];
+    automationEnabled?: boolean;
   };
   aiHistory?: AIHistoryItem[];
 }
@@ -60,7 +63,7 @@ export function exportNativeProject(filename = 'melodyforge_project'): void {
   const aiState = useAICompositionStore.getState();
 
   const payload: MelodyForgeProjectPayload = {
-    version: 1,
+    version: 2,
     format: 'melodyforge-project',
     metadata: {
       title: filename,
@@ -80,6 +83,8 @@ export function exportNativeProject(filename = 'melodyforge_project'): void {
     arrangement: {
       sections: arrangementState.sections,
       totalBars: arrangementState.totalBars,
+      automationLanes: arrangementState.automationLanes,
+      automationEnabled: arrangementState.automationEnabled,
     },
     aiHistory: aiState.history,
   };
@@ -137,6 +142,8 @@ export async function loadNativeProjectFromFile(file: File): Promise<MelodyForge
       sections: arrangement.sections,
       totalBars: arrangement.totalBars || 32,
       selectedSectionId: arrangement.sections[0]?.id || null,
+      automationLanes: arrangement.automationLanes || [],
+      automationEnabled: arrangement.automationEnabled ?? true,
     });
   }
 
@@ -148,4 +155,3 @@ export async function loadNativeProjectFromFile(file: File): Promise<MelodyForge
 
   return validated;
 }
-

@@ -67,6 +67,11 @@ export class BaseSynthInstrument implements Instrument {
     this.channel.solo = solo;
   }
 
+  setPan(pan: number): void {
+    const clampedPan = Math.max(-1, Math.min(1, pan));
+    this.channel.pan.value = clampedPan;
+  }
+
   dispose(): void {
     try {
       this.synth.dispose();
@@ -180,6 +185,11 @@ export class DrumInstrument implements Instrument {
 
   setSolo(solo: boolean): void {
     this.channel.solo = solo;
+  }
+
+  setPan(pan: number): void {
+    const clampedPan = Math.max(-1, Math.min(1, pan));
+    this.channel.pan.value = clampedPan;
   }
 
   dispose(): void {

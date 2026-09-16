@@ -12,7 +12,9 @@ import {
   Trash2,
   Repeat,
   LayoutGrid,
+  Sliders,
 } from 'lucide-react';
+
 
 export const ArrangementToolbar: React.FC = () => {
   const {
@@ -139,6 +141,22 @@ export const ArrangementToolbar: React.FC = () => {
         </button>
 
         <button
+          onClick={() => {
+            const current = useArrangementStore.getState().automationEnabled;
+            useArrangementStore.getState().setAutomationEnabled(!current);
+          }}
+          className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold transition-colors ${
+            useArrangementStore((s) => s.automationEnabled)
+              ? 'bg-indigo-600 text-white'
+              : 'text-gray-400 bg-[#181b24] hover:bg-gray-800'
+          }`}
+          title="Toggle automation lanes"
+        >
+          <Sliders className="w-3 h-3" />
+          <span>Automation</span>
+        </button>
+
+        <button
           onClick={() => selectedSectionId && deleteSection(selectedSectionId)}
           disabled={!selectedSectionId || sections.length <= 1}
           className="p-1 text-gray-400 hover:text-rose-400 disabled:opacity-30 rounded hover:bg-rose-500/10"
@@ -146,6 +164,7 @@ export const ArrangementToolbar: React.FC = () => {
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
+
       </div>
     </div>
   );

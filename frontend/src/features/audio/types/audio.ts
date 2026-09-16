@@ -14,5 +14,7 @@ export interface Instrument {
   setVolume(volumePercent: number): void;
   setMute(muted: boolean): void;
   setSolo(solo: boolean): void;
+  setPan?(pan: number): void;
   dispose(): void;
 }
+

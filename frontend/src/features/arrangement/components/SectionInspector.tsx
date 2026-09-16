@@ -3,15 +3,15 @@ import { useArrangementStore } from '../stores/useArrangementStore';
 import { useCompositionStore } from '../../composition/stores/useCompositionStore';
 import { useStudioStore } from '../../editor/stores/useStudioStore';
 import { usePianoRollStore } from '../../editor/stores/usePianoRollStore';
-import { ArrangementSectionType } from '../types/arrangementSection';
-import { sectionToBeats, getSectionColor } from '../utils/arrangementUtils';
+import { ArrangementSectionType, SectionTransitionType } from '../types/arrangementSection';
+import { sectionToBeats, getSectionColor, isTrackEnabledInSection } from '../utils/arrangementUtils';
 import { generateChordNotes } from '../../composition/generators/chordGenerator';
 import { generateMelody } from '../../composition/generators/melodyGenerator';
 import { generateArpeggio } from '../../composition/generators/arpeggioGenerator';
-import { Music, Sparkles, Sliders, Layers, Info } from 'lucide-react';
+import { Music, Sparkles, Sliders, Layers, Info, CheckSquare } from 'lucide-react';
 
 export const SectionInspector: React.FC = () => {
-  const { getSelectedSection, updateSection } = useArrangementStore();
+  const { getSelectedSection, updateSection, setSectionTrackState } = useArrangementStore();
   const { selectedKey, selectedScale, activeProgression, seed } = useCompositionStore();
   const { tracks, addTrack } = useStudioStore();
   const { notesByTrackId } = usePianoRollStore();
@@ -43,18 +43,17 @@ export const SectionInspector: React.FC = () => {
     return target;
   };
 
-  // Section Isolation helper: Keeps notes outside current section, replaces notes inside section
   const replaceNotesInSection = (trackId: string, newSectionNotes: ReturnType<typeof generateChordNotes>) => {
     const currentNotes = notesByTrackId[trackId] || [];
-    // Filter out existing notes in this section
     const nonSectionNotes = currentNotes.filter(
       (n) => n.startBeat < startBeat || n.startBeat >= endBeat
     );
-    // Align generated note start beats with section startBeat
-    const shiftedNotes = newSectionNotes.map((n) => ({
-      ...n,
-      startBeat: startBeat + (n.startBeat - 1.0),
-    })).filter((n) => n.startBeat < endBeat);
+    const shiftedNotes = newSectionNotes
+      .map((n) => ({
+        ...n,
+        startBeat: startBeat + (n.startBeat - 1.0),
+      }))
+      .filter((n) => n.startBeat < endBeat);
 
     const mergedNotes = [...nonSectionNotes, ...shiftedNotes];
 
@@ -116,7 +115,7 @@ export const SectionInspector: React.FC = () => {
   };
 
   return (
-    <div className="bg-[#0f1117] border border-[#2e3444] rounded-lg p-3 space-y-3 select-none text-xs font-sans">
+    <div className="bg-[#0f1117] border border-[#2e3444] rounded-lg p-3 space-y-3 select-none text-xs font-sans overflow-y-auto max-h-full">
       {/* Inspector Header */}
       <div className="flex items-center justify-between border-b border-[#2e3444] pb-2">
         <div className="flex items-center gap-1.5 font-bold text-gray-200">
@@ -189,6 +188,85 @@ export const SectionInspector: React.FC = () => {
           <span className="text-cyan-400 font-bold">
             {startBeat.toFixed(0)} – {(endBeat - 1).toFixed(0)}
           </span>
+        </div>
+      </div>
+
+      {/* Section Transition Controls */}
+      <div className="space-y-1.5 pt-1 border-t border-[#2e3444]">
+        <div className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+          <Sliders className="w-3 h-3 text-indigo-400" />
+          <span>Section Transition</span>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div>
+            <span className="text-[10px] text-gray-500 block mb-0.5">Transition</span>
+            <select
+              value={section.transitionType || 'immediate'}
+              onChange={(e) =>
+                updateSection(section.id, { transitionType: e.target.value as SectionTransitionType })
+              }
+              className="w-full bg-[#181b24] border border-[#2e3444] rounded px-2 py-1 text-xs text-gray-200 outline-hidden"
+            >
+              <option value="immediate">Immediate</option>
+              <option value="fade">Fade</option>
+              <option value="crossfade">Crossfade</option>
+            </select>
+          </div>
+          {(section.transitionType === 'fade' || section.transitionType === 'crossfade') && (
+            <div>
+              <span className="text-[10px] text-gray-500 block mb-0.5">Fade Duration (s)</span>
+              <input
+                type="number"
+                min={0}
+                step={0.1}
+                max={5}
+                value={section.fadeDuration ?? 0.5}
+                onChange={(e) =>
+                  updateSection(section.id, { fadeDuration: Math.max(0, parseFloat(e.target.value) || 0) })
+                }
+                className="w-full bg-[#181b24] border border-[#2e3444] rounded px-2 py-1 text-xs text-amber-400 font-mono outline-hidden"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Track Activation Controls */}
+      <div className="space-y-1.5 pt-1 border-t border-[#2e3444]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1 text-[10px] font-semibold text-gray-400 uppercase tracking-wider">
+            <CheckSquare className="w-3 h-3 text-indigo-400" />
+            <span>Track Activation</span>
+          </div>
+          <span className="text-[10px] text-gray-500">
+            {tracks.filter((t) => isTrackEnabledInSection(section, t.id)).length} / {tracks.length} Active
+          </span>
+        </div>
+        <div className="bg-[#181b24] rounded border border-[#2e3444] p-2 space-y-1 max-h-32 overflow-y-auto divide-y divide-[#2e3444]/30">
+          {tracks.length === 0 ? (
+            <div className="text-[11px] text-gray-500 text-center py-1">No tracks available</div>
+          ) : (
+            tracks.map((t) => {
+              const isEnabled = isTrackEnabledInSection(section, t.id);
+              return (
+                <label
+                  key={t.id}
+                  className="flex items-center justify-between pt-1 first:pt-0 cursor-pointer text-xs text-gray-300 hover:text-white"
+                >
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: t.color || '#6366f1' }} />
+                    <span className="truncate">{t.name}</span>
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={isEnabled}
+                    onChange={(e) => setSectionTrackState(section.id, t.id, e.target.checked)}
+                    className="accent-indigo-500 rounded cursor-pointer"
+                  />
+                </label>
+              );
+            })
+          )}
         </div>
       </div>
 

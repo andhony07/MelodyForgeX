@@ -1,3 +1,5 @@
+import { SectionTrackState } from './sectionTrackState';
+
 export type ArrangementSectionType =
   | 'Intro'
   | 'Verse'
@@ -6,6 +8,8 @@ export type ArrangementSectionType =
   | 'Bridge'
   | 'Outro'
   | 'Custom';
+
+export type SectionTransitionType = 'immediate' | 'fade' | 'crossfade';
 
 export interface ArrangementSection {
   id: string;
@@ -17,4 +21,8 @@ export interface ArrangementSection {
   color?: string;
   sourceTemplate?: string;
   metadata?: Record<string, unknown>;
+  trackStates?: SectionTrackState[];
+  transitionType?: SectionTransitionType;
+  fadeDuration?: number;
 }
+

@@ -54,6 +54,47 @@ export function sectionToBeats(
   return { startBeat, endBeat, durationBeats };
 }
 
+export function interpolateAutomationPoints(
+  points: { beat: number; value: number }[],
+  beat: number,
+  defaultValue: number
+): number {
+  if (!points || points.length === 0) return defaultValue;
+
+  const sorted = [...points].sort((a, b) => a.beat - b.beat);
+
+  if (beat <= sorted[0].beat) {
+    return sorted[0].value;
+  }
+
+  if (beat >= sorted[sorted.length - 1].beat) {
+    return sorted[sorted.length - 1].value;
+  }
+
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const p1 = sorted[i];
+    const p2 = sorted[i + 1];
+    if (beat >= p1.beat && beat <= p2.beat) {
+      if (p2.beat === p1.beat) return p1.value;
+      const t = (beat - p1.beat) / (p2.beat - p1.beat);
+      return p1.value + t * (p2.value - p1.value);
+    }
+  }
+
+  return defaultValue;
+}
+
+export function isTrackEnabledInSection(
+  section: ArrangementSection | null,
+  trackId: string
+): boolean {
+  if (!section || !section.trackStates || section.trackStates.length === 0) {
+    return true; // Default behavior: enabled for legacy / unspecified sections
+  }
+  const state = section.trackStates.find((st) => st.trackId === trackId);
+  return state ? state.enabled : true;
+}
+
 export function getSectionColor(type: ArrangementSectionType): {
   bg: string;
   border: string;
@@ -113,3 +154,4 @@ export function getSectionColor(type: ArrangementSectionType): {
       };
   }
 }
+
