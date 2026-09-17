@@ -132,13 +132,16 @@ npx tsx src/runTests.ts
 - [x] **Phase 10 — Smart Arrangement & Musical Intelligence**
 - [x] **Phase 11 — Advanced Sound & Instrument System**
 - [x] **Phase 12 — Audio Recording & Offline Rendering**
+- [x] **Phase 13 — Mixing & Mastering System**
 
 ---
 
-## 🎙️ Phase 12 Capabilities: Audio Recording & Offline Rendering
+## 🎛️ Phase 13 Capabilities: Mixing & Mastering System
 
-- **Microphone Recording**: Direct input capture using browser `navigator.mediaDevices.getUserMedia` with automatic stream track cleanup.
-- **Master Output Recording**: Live master bus capture via `Tone.Recorder` without interrupting real-time monitoring.
-- **Offline Project Rendering**: Fast non-realtime rendering via `Tone.Offline` supporting Full Song, Selected Section, and Loop Range scopes.
-- **16-bit PCM WAV Export**: Standards-compliant 44.1kHz/48kHz stereo WAV encoding with browser auto-downloads.
-- **Recording Player & Library**: Instant HTML5 preview player, duration counter, track state management, and memory-safe Object URL cleanup.
+- **Mixer Channel Architecture**: Every studio track dynamically maps to a mixer channel with volume dB (-Inf to +6 dB), stereo pan (-100 to +100), mute, solo, real-time peak metering, and send levels.
+- **6 Insert Effect Types**: Fully configurable Gain, Filter, 3-band EQ, Compressor, Reverb, and Delay insert effects with parameter sanitization, order adjustment, and single-click bypass.
+- **Shared Send/Return Aux Buses**: Efficient shared Reverb and Delay return buses to avoid per-track effect instantiation overhead.
+- **Master Bus Processing & Peak Limiting**: Dedicated master channel featuring master volume, master pan, master inserts, peak metering, and soft-peak limiting.
+- **Mix Presets**: Built-in mix presets (Clean Mix, Vocal Space, Wide Synth, Punchy Drums, Warm Mix) plus user-created custom preset save, load, and deletion.
+- **Schema V4 Serialization**: Backward-compatible V4 project state persistence supporting V1, V2, V3 legacy migration without data loss.
+- **Automation & Render Integration**: Real-time Phase 9 volume and pan automation driving runtime mixer parameters, and Phase 12 OfflineRenderer consuming exact mixer configurations.

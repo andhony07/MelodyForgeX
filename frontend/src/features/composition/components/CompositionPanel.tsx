@@ -13,10 +13,11 @@ import { AICompositionPanel } from '../../ai/components/AICompositionPanel';
 import { ArrangementAssistantPanel } from '../../arrangement/components/ArrangementAssistantPanel';
 import { InstrumentControlPanel } from '../../editor/components/InstrumentControlPanel';
 import { RecordingList } from '../../recording/components/RecordingList';
-import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench, BarChart3, SlidersHorizontal, Folder } from 'lucide-react';
+import { MixerPanel } from '../../mixer/components/MixerPanel';
+import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench, BarChart3, SlidersHorizontal, Folder, SlidersVertical } from 'lucide-react';
 
 export const CompositionPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'assistant' | 'sound' | 'library'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'assistant' | 'sound' | 'library' | 'mixer'>('ai');
 
   const {
     selectedScale,
@@ -195,6 +196,17 @@ export const CompositionPanel: React.FC = () => {
             <Folder className="w-3 h-3" />
             <span>Library</span>
           </button>
+          <button
+            onClick={() => setActiveTab('mixer')}
+            className={`flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+              activeTab === 'mixer'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <SlidersVertical className="w-3 h-3" />
+            <span>Mixer</span>
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -206,6 +218,10 @@ export const CompositionPanel: React.FC = () => {
           <InstrumentControlPanel />
         ) : activeTab === 'library' ? (
           <RecordingList />
+        ) : activeTab === 'mixer' ? (
+          <div className="h-[550px] overflow-hidden">
+            <MixerPanel />
+          </div>
         ) : (
           <div className="space-y-4">
             {/* Key & Scale Selection */}

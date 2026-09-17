@@ -6,6 +6,7 @@ import { runAutomationTests } from './features/arrangement/__tests__/automation.
 import { runArrangementIntelligenceTests } from './features/arrangement/__tests__/intelligence.test';
 import { runInstrumentTests } from './features/audio/__tests__/instrument.test';
 import { runRecordingTests } from './features/recording/__tests__/recording.test';
+import { runMixerTests } from './features/mixer/__tests__/mixer.test';
 
 console.log('Running MelodyForge Test Suites...\n');
 
@@ -36,6 +37,10 @@ try {
   console.log(`Phase 12 Audio Recording & Rendering Tests: ${recResult.passed}/${recResult.total} PASSED.`);
   recResult.logs.forEach((log) => console.log(log));
 
+  const mixResult = runMixerTests();
+  console.log(`Phase 13 Mixing & Mastering System Tests: ${mixResult.passed}/${mixResult.total} PASSED.`);
+  mixResult.logs.forEach((log) => console.log(log));
+
   const totalPassed =
     compResult.passed +
     aiResult.passed +
@@ -44,7 +49,8 @@ try {
     autoResult.passed +
     intelResult.passed +
     instResult.passed +
-    recResult.passed;
+    recResult.passed +
+    mixResult.passed;
 
   const totalTests =
     compResult.total +
@@ -54,7 +60,8 @@ try {
     autoResult.total +
     intelResult.total +
     instResult.total +
-    recResult.total;
+    recResult.total +
+    mixResult.total;
 
   console.log(`\nALL SUITES PASSED: ${totalPassed}/${totalTests} tests succeeded.`);
 
