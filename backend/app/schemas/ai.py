@@ -1,4 +1,4 @@
-from typing import List, Optional, Literal
+from typing import List, Optional, Literal, Any
 from pydantic import BaseModel, Field
 
 class TimeSignatureSchema(BaseModel):
@@ -61,3 +61,40 @@ class AICompositionRequest(BaseModel):
     complexity: Optional[Literal["simple", "moderate", "complex"]] = None
     instruments: Optional[List[str]] = None
     seed: Optional[int] = None
+
+class AIProductionFindingSchema(BaseModel):
+    id: str
+    category: str = Field(default="mix")
+    severity: str = Field(default="info")
+    title: str
+    description: str
+    evidence: List[str] = Field(default_factory=list)
+    suggestedAction: Optional[str] = None
+    confidence: float = Field(default=0.85, ge=0.0, le=1.0)
+
+class AIProductionSuggestionSchema(BaseModel):
+    id: str
+    category: str = Field(default="mix")
+    title: str
+    description: str
+    reason: str
+    targetType: str = Field(default="mixer")
+    targetId: str = Field(default="project")
+    action: str = Field(default="set_track_volume")
+    parameters: dict = Field(default_factory=dict)
+    evidence: List[str] = Field(default_factory=list)
+    confidence: float = Field(default=0.85, ge=0.0, le=1.0)
+    currentValue: Optional[Any] = None
+    proposedValue: Optional[Any] = None
+
+class AIProductionRequest(BaseModel):
+    context: dict = Field(default_factory=dict)
+    mode: str = Field(default="analyze")
+    userPrompt: Optional[str] = None
+
+class AIProductionResponseSchema(BaseModel):
+    summary: str
+    observations: List[str] = Field(default_factory=list)
+    findings: List[AIProductionFindingSchema] = Field(default_factory=list)
+    suggestions: List[AIProductionSuggestionSchema] = Field(default_factory=list)
+

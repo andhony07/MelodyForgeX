@@ -3,6 +3,8 @@ import { usePianoRollStore } from '../../editor/stores/usePianoRollStore';
 import { useArrangementStore } from '../../arrangement/stores/useArrangementStore';
 import { useAICompositionStore, AIHistoryItem } from '../../ai/stores/useAICompositionStore';
 import { useMixerStore } from '../../mixer/stores/useMixerStore';
+import { useProductionAssistantStore } from '../../production/stores/useProductionAssistantStore';
+import { ProductionReport, AssistantMode, AssistantHistoryEntry } from '../../production/types/productionTypes';
 import { SerializedMixerState } from '../../mixer/types/mixer';
 import { Track, MusicalKey, KeyMode, TimeSignature } from '../../editor/types/studio';
 import { Note } from '../../editor/types/note';
@@ -38,6 +40,11 @@ export interface MelodyForgeProjectPayload {
   mixer?: SerializedMixerState;
   customPresets?: InstrumentPreset[];
   aiHistory?: AIHistoryItem[];
+  productionAssistant?: {
+    activeMode?: AssistantMode;
+    reports?: ProductionReport[];
+    history?: AssistantHistoryEntry[];
+  };
 }
 
 export function validateMelodyForgeProjectFile(data: unknown): MelodyForgeProjectPayload {
@@ -68,10 +75,11 @@ export function exportNativeProject(filename = 'melodyforge_project'): void {
   const arrangementState = useArrangementStore.getState();
   const aiState = useAICompositionStore.getState();
   const mixerState = useMixerStore.getState().serializeState();
+  const prodState = useProductionAssistantStore.getState();
   const customPresets = PresetManager.getInstance().getAllPresets().filter((p) => !p.isBuiltIn);
 
   const payload: MelodyForgeProjectPayload = {
-    version: 4,
+    version: 5,
     format: 'melodyforge-project',
     metadata: {
       title: filename,
@@ -97,6 +105,11 @@ export function exportNativeProject(filename = 'melodyforge_project'): void {
     mixer: mixerState,
     customPresets,
     aiHistory: aiState.history,
+    productionAssistant: {
+      activeMode: prodState.activeMode,
+      reports: prodState.report ? [prodState.report] : [],
+      history: prodState.history,
+    },
   };
 
   const jsonString = JSON.stringify(payload, null, 2);
@@ -126,7 +139,7 @@ export async function loadNativeProjectFromFile(file: File): Promise<MelodyForge
   const validated = validateMelodyForgeProjectFile(jsonObject);
 
   // Load into stores
-  const { studio, tracks, notesByTrackId, arrangement, mixer, customPresets, aiHistory } = validated;
+  const { studio, tracks, notesByTrackId, arrangement, mixer, customPresets, aiHistory, productionAssistant } = validated;
 
   if (Array.isArray(customPresets)) {
     const presetManager = PresetManager.getInstance();
@@ -177,5 +190,17 @@ export async function loadNativeProjectFromFile(file: File): Promise<MelodyForge
     });
   }
 
+  if (productionAssistant) {
+    useProductionAssistantStore.setState({
+      activeMode: productionAssistant.activeMode || 'analyze',
+      report: productionAssistant.reports && productionAssistant.reports.length > 0 ? productionAssistant.reports[0] : null,
+      history: productionAssistant.history || [],
+    });
+  } else {
+    useProductionAssistantStore.getState().reset();
+  }
+
   return validated;
 }
+
+

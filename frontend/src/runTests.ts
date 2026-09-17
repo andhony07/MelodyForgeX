@@ -7,6 +7,7 @@ import { runArrangementIntelligenceTests } from './features/arrangement/__tests_
 import { runInstrumentTests } from './features/audio/__tests__/instrument.test';
 import { runRecordingTests } from './features/recording/__tests__/recording.test';
 import { runMixerTests } from './features/mixer/__tests__/mixer.test';
+import { runProductionTests } from './features/production/__tests__/production.test';
 
 console.log('Running MelodyForge Test Suites...\n');
 
@@ -41,6 +42,10 @@ try {
   console.log(`Phase 13 Mixing & Mastering System Tests: ${mixResult.passed}/${mixResult.total} PASSED.`);
   mixResult.logs.forEach((log) => console.log(log));
 
+  const prodResult = runProductionTests();
+  console.log(`Phase 14 AI Production Assistant Tests: ${prodResult.passed}/${prodResult.total} PASSED.`);
+  prodResult.logs.forEach((log) => console.log(log));
+
   const totalPassed =
     compResult.passed +
     aiResult.passed +
@@ -50,7 +55,8 @@ try {
     intelResult.passed +
     instResult.passed +
     recResult.passed +
-    mixResult.passed;
+    mixResult.passed +
+    prodResult.passed;
 
   const totalTests =
     compResult.total +
@@ -61,7 +67,8 @@ try {
     intelResult.total +
     instResult.total +
     recResult.total +
-    mixResult.total;
+    mixResult.total +
+    prodResult.total;
 
   console.log(`\nALL SUITES PASSED: ${totalPassed}/${totalTests} tests succeeded.`);
 
@@ -71,3 +78,4 @@ try {
   console.error('Test Suite Failed:\n', errorMsg);
   process.exit(1);
 }
+

@@ -51,3 +51,28 @@ def test_mock_composition_generator_determinism():
     res1 = generate_mock_composition_spec(req1)
     res2 = generate_mock_composition_spec(req2)
     assert res1 == res2
+
+def test_analyze_production_endpoint_valid():
+    response = client.post(
+        "/api/ai/production/analyze",
+        json={
+            "context": {
+                "projectSettings": {"title": "Test Project", "bpm": 120, "key": "C", "scale": "Major", "totalBars": 32},
+                "tracks": [{"id": "t1", "name": "Piano", "instrument": "Piano"}],
+                "arrangement": [],
+                "mixerAnalysis": {},
+                "musicalAnalysis": {"totalNotes": 40},
+                "automationAnalysis": {"laneCount": 0, "pointCount": 0}
+            },
+            "mode": "analyze"
+        }
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["success"] is True
+    analysis = data["analysis"]
+    assert "summary" in analysis
+    assert "observations" in analysis
+    assert "findings" in analysis
+    assert "suggestions" in analysis
+

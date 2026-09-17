@@ -14,10 +14,11 @@ import { ArrangementAssistantPanel } from '../../arrangement/components/Arrangem
 import { InstrumentControlPanel } from '../../editor/components/InstrumentControlPanel';
 import { RecordingList } from '../../recording/components/RecordingList';
 import { MixerPanel } from '../../mixer/components/MixerPanel';
-import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench, BarChart3, SlidersHorizontal, Folder, SlidersVertical } from 'lucide-react';
+import { ProductionAssistantPanel } from '../../production/components/ProductionAssistantPanel';
+import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench, BarChart3, SlidersHorizontal, Folder, SlidersVertical, Cpu } from 'lucide-react';
 
 export const CompositionPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'assistant' | 'sound' | 'library' | 'mixer'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'assistant' | 'sound' | 'library' | 'mixer' | 'producer'>('ai');
 
   const {
     selectedScale,
@@ -207,6 +208,17 @@ export const CompositionPanel: React.FC = () => {
             <SlidersVertical className="w-3 h-3" />
             <span>Mixer</span>
           </button>
+          <button
+            onClick={() => setActiveTab('producer')}
+            className={`flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+              activeTab === 'producer'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Cpu className="w-3 h-3" />
+            <span>Producer</span>
+          </button>
         </div>
 
         {/* Tab Content */}
@@ -214,6 +226,10 @@ export const CompositionPanel: React.FC = () => {
           <AICompositionPanel />
         ) : activeTab === 'assistant' ? (
           <ArrangementAssistantPanel />
+        ) : activeTab === 'producer' ? (
+          <div className="h-[550px] overflow-hidden">
+            <ProductionAssistantPanel />
+          </div>
         ) : activeTab === 'sound' ? (
           <InstrumentControlPanel />
         ) : activeTab === 'library' ? (
