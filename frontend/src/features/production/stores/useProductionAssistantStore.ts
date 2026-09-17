@@ -13,14 +13,16 @@ import { Track, MusicalKey } from '../../editor/types/studio';
 import { ArrangementSection } from '../../arrangement/types/arrangementSection';
 import { AutomationLane } from '../../arrangement/types/automation';
 
+import { TrackMixerChannel, MasterMixerChannel } from '../../mixer/types/mixer';
+
 interface StateSnapshot {
   tempo?: number;
   key?: MusicalKey;
   tracks?: Track[];
   sections?: ArrangementSection[];
   automationLanes?: AutomationLane[];
-  mixerChannels?: Record<string, unknown>;
-  masterMixer?: unknown;
+  mixerChannels?: Record<string, TrackMixerChannel>;
+  masterMixer?: MasterMixerChannel;
 }
 
 interface ProductionAssistantState {
@@ -249,10 +251,10 @@ export const useProductionAssistantStore = create<ProductionAssistantState>((set
         useArrangementStore.setState({ automationLanes: snapshot.automationLanes });
       }
       if (snapshot.mixerChannels) {
-        useMixerStore.setState({ channels: snapshot.mixerChannels as any });
+        useMixerStore.setState({ channels: snapshot.mixerChannels });
       }
       if (snapshot.masterMixer) {
-        useMixerStore.setState({ master: snapshot.masterMixer as any });
+        useMixerStore.setState({ master: snapshot.masterMixer });
       }
 
       return false;
@@ -279,10 +281,10 @@ export const useProductionAssistantStore = create<ProductionAssistantState>((set
       useArrangementStore.setState({ automationLanes: snapshot.automationLanes });
     }
     if (snapshot.mixerChannels) {
-      useMixerStore.setState({ channels: snapshot.mixerChannels as any });
+      useMixerStore.setState({ channels: snapshot.mixerChannels });
     }
     if (snapshot.masterMixer) {
-      useMixerStore.setState({ master: snapshot.masterMixer as any });
+      useMixerStore.setState({ master: snapshot.masterMixer });
     }
 
     const newApplied = new Set(get().appliedSuggestions);

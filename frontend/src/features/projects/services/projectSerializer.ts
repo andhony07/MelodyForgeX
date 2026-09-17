@@ -66,7 +66,41 @@ export function validateMelodyForgeProjectFile(data: unknown): MelodyForgeProjec
     throw new Error('Invalid project file: Missing notes dataset.');
   }
 
-  return obj as unknown as MelodyForgeProjectPayload;
+  const version = (typeof obj.version === 'number' && obj.version >= 1) ? obj.version : 1;
+
+  const metadataObj = (typeof obj.metadata === 'object' && obj.metadata !== null) ? (obj.metadata as Record<string, unknown>) : {};
+  const studioObj = (typeof obj.studio === 'object' && obj.studio !== null) ? (obj.studio as Record<string, unknown>) : {};
+  const arrangementObj = (typeof obj.arrangement === 'object' && obj.arrangement !== null) ? (obj.arrangement as Record<string, unknown>) : {};
+
+  return {
+    version,
+    format: 'melodyforge-project',
+    metadata: {
+      title: typeof metadataObj.title === 'string' ? metadataObj.title : 'Untitled Project',
+      createdAt: typeof metadataObj.createdAt === 'string' ? metadataObj.createdAt : new Date().toISOString(),
+      updatedAt: typeof metadataObj.updatedAt === 'string' ? metadataObj.updatedAt : new Date().toISOString(),
+    },
+    studio: {
+      tempo: typeof studioObj.tempo === 'number' ? studioObj.tempo : 120,
+      key: (typeof studioObj.key === 'string' ? studioObj.key : 'C') as MusicalKey,
+      mode: (typeof studioObj.mode === 'string' ? studioObj.mode : 'Major') as KeyMode,
+      timeSignature: (typeof studioObj.timeSignature === 'string' ? studioObj.timeSignature : '4/4') as TimeSignature,
+      zoom: typeof studioObj.zoom === 'number' ? studioObj.zoom : 100,
+      isLooping: typeof studioObj.isLooping === 'boolean' ? studioObj.isLooping : false,
+    },
+    tracks: (obj.tracks as Track[]) || [],
+    notesByTrackId: (obj.notesByTrackId as Record<string, Note[]>) || {},
+    arrangement: {
+      sections: Array.isArray(arrangementObj.sections) ? (arrangementObj.sections as ArrangementSection[]) : [],
+      totalBars: typeof arrangementObj.totalBars === 'number' ? arrangementObj.totalBars : 32,
+      automationLanes: Array.isArray(arrangementObj.automationLanes) ? (arrangementObj.automationLanes as AutomationLane[]) : [],
+      automationEnabled: typeof arrangementObj.automationEnabled === 'boolean' ? arrangementObj.automationEnabled : true,
+    },
+    mixer: obj.mixer as SerializedMixerState | undefined,
+    customPresets: Array.isArray(obj.customPresets) ? (obj.customPresets as InstrumentPreset[]) : [],
+    aiHistory: Array.isArray(obj.aiHistory) ? (obj.aiHistory as AIHistoryItem[]) : [],
+    productionAssistant: obj.productionAssistant as MelodyForgeProjectPayload['productionAssistant'],
+  };
 }
 
 export function exportNativeProject(filename = 'melodyforge_project'): void {

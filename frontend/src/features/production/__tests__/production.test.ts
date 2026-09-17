@@ -161,6 +161,8 @@ export function runProductionTests(): TestResult {
   assert(!useProductionAssistantStore.getState().appliedSuggestions.has('sug-tempo'), 'Removes suggestion ID from applied set');
 
   // Track volume suggestion test
+  const track1VolBefore = useMixerStore.getState().channels['track-1']?.volumeDb;
+
   const volSuggestion: ProductionSuggestion = {
     id: 'sug-vol',
     category: 'mix',
@@ -172,7 +174,7 @@ export function runProductionTests(): TestResult {
     action: 'set_track_volume',
     parameters: { trackId: 'track-1', volumeDb: -6 },
     confidence: 0.9,
-    currentValue: 0,
+    currentValue: track1VolBefore,
     proposedValue: -6,
     evidence: [],
     applied: false,
@@ -183,7 +185,7 @@ export function runProductionTests(): TestResult {
   assert(useMixerStore.getState().channels['track-1']?.volumeDb === -6, 'Applies track volume change to mixer store');
 
   useProductionAssistantStore.getState().rollbackSuggestion('sug-vol');
-  assert(useMixerStore.getState().channels['track-1']?.volumeDb === 0, 'Rolls back track volume change cleanly');
+  assert(useMixerStore.getState().channels['track-1']?.volumeDb === track1VolBefore, 'Rolls back track volume change cleanly');
 
   return { passed, total, logs };
 }

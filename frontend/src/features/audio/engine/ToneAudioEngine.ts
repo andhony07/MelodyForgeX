@@ -20,7 +20,9 @@ export class ToneAudioEngine {
   private automationLoopId: number | null = null;
 
   private constructor() {
-    Tone.Transport.bpm.value = 120;
+    if (Tone.Transport && Tone.Transport.bpm) {
+      Tone.Transport.bpm.value = 120;
+    }
   }
 
   public static getInstance(): ToneAudioEngine {
@@ -103,6 +105,20 @@ export class ToneAudioEngine {
   }
 
   public updateTrackControls(tracks: Track[]): void {
+    const validTrackIds = new Set(tracks.map((t) => t.id));
+    for (const [trackId, inst] of Array.from(this.instruments.entries())) {
+      if (!validTrackIds.has(trackId)) {
+        try {
+          inst.dispose();
+        } catch {
+          // Ignore disposal errors
+        }
+        this.instruments.delete(trackId);
+        this.instrumentIdsByTrack.delete(trackId);
+        this.presetIdsByTrack.delete(trackId);
+      }
+    }
+
     tracks.forEach((track) => {
       this.getInstrumentForTrack(track);
     });
@@ -233,21 +249,28 @@ export class ToneAudioEngine {
   }
 
   public stop(): void {
-    Tone.Transport.stop();
-    Tone.Transport.seconds = 0;
-    Tone.Transport.bpm.value = this.baseTempo;
+    if (Tone.Transport) {
+      Tone.Transport.stop();
+      Tone.Transport.seconds = 0;
+      if (Tone.Transport.bpm) {
+        Tone.Transport.bpm.value = this.baseTempo;
+      }
+    }
     this.stopAutomationLoop();
   }
 
   public seekToBeat(beat: number): void {
     const clampedBeat = Math.max(1.0, beat);
-    const seconds = (clampedBeat - 1.0) * (60 / Tone.Transport.bpm.value);
-    Tone.Transport.seconds = seconds;
+    const bpm = Tone.Transport.bpm?.value || this.baseTempo || 120;
+    const seconds = (clampedBeat - 1.0) * (60 / bpm);
+    if (Tone.Transport) {
+      Tone.Transport.seconds = seconds;
+    }
   }
 
   public getCurrentBeat(): number {
-    const bpm = Tone.Transport.bpm.value;
-    const currentSeconds = Tone.Transport.seconds;
+    const bpm = Tone.Transport.bpm?.value || this.baseTempo || 120;
+    const currentSeconds = Tone.Transport.seconds || 0;
     const beatsFromZero = currentSeconds * (bpm / 60);
     return 1.0 + beatsFromZero;
   }
@@ -255,12 +278,15 @@ export class ToneAudioEngine {
   public setTempo(bpm: number): void {
     const clampedBpm = Math.max(20, Math.min(300, bpm));
     this.baseTempo = clampedBpm;
-    Tone.Transport.bpm.value = clampedBpm;
+    if (Tone.Transport && Tone.Transport.bpm) {
+      Tone.Transport.bpm.value = clampedBpm;
+    }
   }
 
   public setLoop(enabled: boolean, startBeat = 1.0, endBeat?: number): void {
+    if (!Tone.Transport) return;
     Tone.Transport.loop = enabled;
-    const bpm = Tone.Transport.bpm.value;
+    const bpm = Tone.Transport.bpm?.value || this.baseTempo || 120;
     const startSec = Math.max(0, (startBeat - 1.0) * (60 / bpm));
     Tone.Transport.loopStart = startSec;
 
