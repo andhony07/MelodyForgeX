@@ -1,3 +1,5 @@
+import { InstrumentParameters } from '../../audio/types/instrument';
+
 export interface Track {
   id: string;
   name: string;
@@ -8,6 +10,8 @@ export interface Track {
   volume: number; // 0 - 100
   color: string; // Tailwind color or hex accent
   channel: number;
+  presetId?: string;
+  customParameters?: InstrumentParameters;
 }
 
 export interface InstrumentOption {

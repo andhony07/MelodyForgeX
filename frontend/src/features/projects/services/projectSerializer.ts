@@ -6,6 +6,8 @@ import { Track, MusicalKey, KeyMode, TimeSignature } from '../../editor/types/st
 import { Note } from '../../editor/types/note';
 import { ArrangementSection } from '../../arrangement/types/arrangementSection';
 import { AutomationLane } from '../../arrangement/types/automation';
+import { InstrumentPreset } from '../../audio/types/instrument';
+import { PresetManager } from '../../audio/presets/PresetManager';
 
 export interface MelodyForgeProjectPayload {
   version: number;
@@ -31,6 +33,7 @@ export interface MelodyForgeProjectPayload {
     automationLanes?: AutomationLane[];
     automationEnabled?: boolean;
   };
+  customPresets?: InstrumentPreset[];
   aiHistory?: AIHistoryItem[];
 }
 
@@ -61,9 +64,10 @@ export function exportNativeProject(filename = 'melodyforge_project'): void {
   const pianoRollState = usePianoRollStore.getState();
   const arrangementState = useArrangementStore.getState();
   const aiState = useAICompositionStore.getState();
+  const customPresets = PresetManager.getInstance().getAllPresets().filter((p) => !p.isBuiltIn);
 
   const payload: MelodyForgeProjectPayload = {
-    version: 2,
+    version: 3,
     format: 'melodyforge-project',
     metadata: {
       title: filename,
@@ -86,6 +90,7 @@ export function exportNativeProject(filename = 'melodyforge_project'): void {
       automationLanes: arrangementState.automationLanes,
       automationEnabled: arrangementState.automationEnabled,
     },
+    customPresets,
     aiHistory: aiState.history,
   };
 
@@ -116,7 +121,14 @@ export async function loadNativeProjectFromFile(file: File): Promise<MelodyForge
   const validated = validateMelodyForgeProjectFile(jsonObject);
 
   // Load into stores
-  const { studio, tracks, notesByTrackId, arrangement, aiHistory } = validated;
+  const { studio, tracks, notesByTrackId, arrangement, customPresets, aiHistory } = validated;
+
+  if (Array.isArray(customPresets)) {
+    const presetManager = PresetManager.getInstance();
+    customPresets.forEach((preset) => {
+      presetManager.saveCustomPreset(preset);
+    });
+  }
 
   if (studio) {
     useStudioStore.setState({

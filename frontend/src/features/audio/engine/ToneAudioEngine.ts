@@ -1,14 +1,10 @@
 import * as Tone from 'tone';
-import { Instrument } from '../types/audio';
+import { Instrument } from '../types/instrument';
 import { Track } from '../../editor/types/studio';
 import { Note } from '../../editor/types/note';
-import {
-  PianoInstrument,
-  GuitarInstrument,
-  BassInstrument,
-  SynthInstrument,
-  DrumInstrument,
-} from '../instruments/SynthInstruments';
+import { InstrumentRegistry } from '../instruments/InstrumentRegistry';
+import { InstrumentFactory } from '../instruments/InstrumentFactory';
+import { PresetManager } from '../presets/PresetManager';
 import { useArrangementStore } from '../../arrangement/stores/useArrangementStore';
 import { isTrackEnabledInSection } from '../../arrangement/utils/arrangementUtils';
 
@@ -17,6 +13,8 @@ export class ToneAudioEngine {
 
   private isStarted = false;
   private instruments: Map<string, Instrument> = new Map();
+  private instrumentIdsByTrack: Map<string, string> = new Map();
+  private presetIdsByTrack: Map<string, string> = new Map();
   private scheduledEvents: number[] = [];
   private baseTempo = 120;
   private automationLoopId: number | null = null;
@@ -40,36 +38,73 @@ export class ToneAudioEngine {
   }
 
   public getInstrumentForTrack(track: Track): Instrument {
-    let inst = this.instruments.get(track.id);
-    if (!inst) {
-      const lower = (track.instrument || track.name).toLowerCase();
-      if (lower.includes('piano')) {
-        inst = new PianoInstrument(track.volume);
-      } else if (lower.includes('guitar')) {
-        inst = new GuitarInstrument(track.volume);
-      } else if (lower.includes('bass')) {
-        inst = new BassInstrument(track.volume);
-      } else if (lower.includes('drum')) {
-        inst = new DrumInstrument(track.volume);
-      } else {
-        inst = new SynthInstrument(track.volume);
+    const existingInst = this.instruments.get(track.id);
+    const prevInstrumentId = this.instrumentIdsByTrack.get(track.id);
+    const prevPresetId = this.presetIdsByTrack.get(track.id);
+
+    const targetInstrumentId = track.instrument;
+    const targetPresetId = track.presetId;
+
+    // Determine if instrument instance needs to be created or replaced
+    if (!existingInst || prevInstrumentId !== targetInstrumentId) {
+      // 1. Dispose old instrument safely if exists
+      if (existingInst) {
+        try {
+          existingInst.dispose();
+        } catch {
+          // ignore disposal error
+        }
+      }
+
+      // 2. Instantiate new instrument from registry
+      const registry = InstrumentRegistry.getInstance();
+      const inst = registry.getInstrument(targetInstrumentId, track.volume);
+
+      // 3. Apply preset or custom parameters if present
+      if (targetPresetId) {
+        const preset = PresetManager.getInstance().getPreset(targetPresetId);
+        if (preset) {
+          InstrumentFactory.applyPresetToInstrument(inst, preset);
+        }
+      }
+      if (track.customParameters) {
+        InstrumentFactory.applyParametersToInstrument(inst, track.customParameters);
       }
 
       inst.setMute(track.muted);
       inst.setSolo(track.solo);
+
       this.instruments.set(track.id, inst);
+      this.instrumentIdsByTrack.set(track.id, targetInstrumentId);
+      if (targetPresetId) {
+        this.presetIdsByTrack.set(track.id, targetPresetId);
+      }
+      return inst;
     }
-    return inst;
+
+    // Instrument already exists: check if preset or parameters updated
+    if (targetPresetId && targetPresetId !== prevPresetId) {
+      const preset = PresetManager.getInstance().getPreset(targetPresetId);
+      if (preset) {
+        InstrumentFactory.applyPresetToInstrument(existingInst, preset);
+      }
+      this.presetIdsByTrack.set(track.id, targetPresetId);
+    }
+
+    if (track.customParameters) {
+      InstrumentFactory.applyParametersToInstrument(existingInst, track.customParameters);
+    }
+
+    existingInst.setVolume(track.volume);
+    existingInst.setMute(track.muted);
+    existingInst.setSolo(track.solo);
+
+    return existingInst;
   }
 
   public updateTrackControls(tracks: Track[]): void {
     tracks.forEach((track) => {
-      const inst = this.instruments.get(track.id);
-      if (inst) {
-        inst.setVolume(track.volume);
-        inst.setMute(track.muted);
-        inst.setSolo(track.solo);
-      }
+      this.getInstrumentForTrack(track);
     });
   }
 
@@ -241,7 +276,7 @@ export class ToneAudioEngine {
       const inst = this.getInstrumentForTrack(track);
       inst.previewNote(pitch, durationBeats, velocity);
     } else {
-      const fallbackSynth = new PianoInstrument(80);
+      const fallbackSynth = InstrumentRegistry.getInstance().getFallbackInstrument(80);
       fallbackSynth.previewNote(pitch, durationBeats, velocity);
     }
   }
@@ -252,5 +287,7 @@ export class ToneAudioEngine {
     this.scheduledEvents = [];
     this.instruments.forEach((inst) => inst.dispose());
     this.instruments.clear();
+    this.instrumentIdsByTrack.clear();
+    this.presetIdsByTrack.clear();
   }
 }

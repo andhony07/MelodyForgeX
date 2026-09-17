@@ -1,162 +1,527 @@
 import * as Tone from 'tone';
-import { Instrument } from '../types/audio';
+import { BaseInstrument } from './Instrument';
+import { InstrumentCategory } from '../types/instrument';
 import { midiToNoteName } from '../../editor/constants/note';
 
-// Helper to convert volume percentage (0 - 100) to decibels (-40dB to +6dB)
-const volumeToDb = (volumePercent: number): number => {
-  if (volumePercent <= 0) return -Infinity;
-  if (volumePercent >= 100) return 6;
-  // Logarithmic volume curve mapping
-  return -40 + (volumePercent / 100) * 46;
-};
+const createMockSynth = <T>() =>
+  ({
+    connect: () => {},
+    triggerAttackRelease: () => {},
+    set: () => {},
+    dispose: () => {},
+  } as unknown as T);
 
-export class BaseSynthInstrument implements Instrument {
-  protected channel: Tone.Channel;
-  protected synth: Tone.PolySynth | Tone.MonoSynth;
+// 1. Acoustic Piano Synth
+export class AcousticPianoSynth extends BaseInstrument {
+  public readonly id = 'acoustic-piano';
+  public readonly name = 'Acoustic Piano';
+  public readonly category: InstrumentCategory = 'Piano';
 
-  constructor(synth: Tone.PolySynth | Tone.MonoSynth, initialVolume = 80) {
-    this.channel = new Tone.Channel({
-      volume: volumeToDb(initialVolume),
-      mute: false,
-      solo: false,
-    }).toDestination();
+  protected synth: Tone.PolySynth<Tone.Synth>;
 
-    this.synth = synth;
-    this.synth.connect(this.channel);
-  }
-
-  async initialize(): Promise<void> {
-    // Synth initialization ready
+  constructor(initialVolume = 85) {
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.005, decay: 1.2, sustain: 0.3, release: 1.0 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.Synth>>();
+    }
   }
 
   playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
     const noteName = midiToNoteName(pitch);
     const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
-
-    // Convert durationBeats to Tone.js Musical Time notation (e.g. 1 beat = "4n", 2 beats = "2n")
-    const durationSeconds = (durationBeats * (60 / Tone.Transport.bpm.value));
-
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
     const triggerTime = time !== undefined ? time : Tone.now();
     try {
       this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
     } catch {
-      // Ignore synth scheduling edge cases
+      /* ignore scheduling edge cases */
     }
   }
 
   previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
-    const noteName = midiToNoteName(pitch);
-    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
-    const durationSeconds = (durationBeats * (60 / Tone.Transport.bpm.value));
-    try {
-      this.synth.triggerAttackRelease(noteName, durationSeconds, Tone.now(), normVel);
-    } catch {
-      // Ignore preview edge cases
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
     }
-  }
-
-  setVolume(volumePercent: number): void {
-    this.channel.volume.value = volumeToDb(volumePercent);
-  }
-
-  setMute(muted: boolean): void {
-    this.channel.mute = muted;
-  }
-
-  setSolo(solo: boolean): void {
-    this.channel.solo = solo;
-  }
-
-  setPan(pan: number): void {
-    const clampedPan = Math.max(-1, Math.min(1, pan));
-    this.channel.pan.value = clampedPan;
   }
 
   dispose(): void {
     try {
       this.synth.dispose();
-      this.channel.dispose();
     } catch {
-      // Ignore disposal errors
+      /* ignore disposal error */
+    }
+    super.dispose();
+  }
+}
+
+// 2. Electric Piano Synth (FM synthesis tone)
+export class ElectricPianoSynth extends BaseInstrument {
+  public readonly id = 'electric-piano';
+  public readonly name = 'Electric Piano';
+  public readonly category: InstrumentCategory = 'Keys';
+
+  protected synth: Tone.PolySynth<Tone.FMSynth>;
+
+  constructor(initialVolume = 80) {
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.FMSynth, {
+        harmonicity: 3,
+        modulationIndex: 2,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.01, decay: 1.2, sustain: 0.5, release: 0.8 },
+        modulation: { type: 'triangle' },
+        modulationEnvelope: { attack: 0.002, decay: 0.2, sustain: 0.1, release: 0.2 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.FMSynth>>();
     }
   }
-}
 
-export class PianoInstrument extends BaseSynthInstrument {
-  constructor(initialVolume = 85) {
-    const synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'triangle' },
-      envelope: { attack: 0.005, decay: 1.2, sustain: 0.3, release: 1.0 },
-    });
-    super(synth, initialVolume);
+  playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
+    const noteName = midiToNoteName(pitch);
+    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
+    const triggerTime = time !== undefined ? time : Tone.now();
+    try {
+      this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
+    } catch {
+      /* ignore scheduling edge cases */
+    }
+  }
+
+  previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
+    }
+  }
+
+  dispose(): void {
+    try {
+      this.synth.dispose();
+    } catch {
+      /* ignore disposal error */
+    }
+    super.dispose();
   }
 }
 
-export class GuitarInstrument extends BaseSynthInstrument {
+// 3. Guitar Synth (FM plucked string texture)
+export class GuitarSynth extends BaseInstrument {
+  public readonly id = 'guitar';
+  public readonly name = 'Guitar';
+  public readonly category: InstrumentCategory = 'Guitar';
+
+  protected synth: Tone.PolySynth<Tone.FMSynth>;
+
   constructor(initialVolume = 75) {
-    const synth = new Tone.PolySynth(Tone.FMSynth, {
-      harmonicity: 2,
-      modulationIndex: 3,
-      envelope: { attack: 0.01, decay: 0.8, sustain: 0.2, release: 0.8 },
-    });
-    super(synth, initialVolume);
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.FMSynth, {
+        harmonicity: 2,
+        modulationIndex: 3.5,
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.01, decay: 0.8, sustain: 0.2, release: 0.8 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.FMSynth>>();
+    }
+  }
+
+  playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
+    const noteName = midiToNoteName(pitch);
+    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
+    const triggerTime = time !== undefined ? time : Tone.now();
+    try {
+      this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
+    } catch {
+      /* ignore scheduling edge cases */
+    }
+  }
+
+  previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
+    }
+  }
+
+  dispose(): void {
+    try {
+      this.synth.dispose();
+    } catch {
+      /* ignore disposal error */
+    }
+    super.dispose();
   }
 }
 
-export class BassInstrument extends BaseSynthInstrument {
+// 4. Bass Synth (Punchy lowpass sawtooth synth)
+export class BassSynth extends BaseInstrument {
+  public readonly id = 'bass';
+  public readonly name = 'Bass';
+  public readonly category: InstrumentCategory = 'Bass';
+
+  protected synth: Tone.PolySynth<Tone.Synth>;
+
   constructor(initialVolume = 80) {
-    const synth = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'sawtooth' },
-      envelope: { attack: 0.01, decay: 0.4, sustain: 0.5, release: 0.4 },
-    });
-    super(synth, initialVolume);
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 0.01, decay: 0.4, sustain: 0.6, release: 0.4 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.Synth>>();
+    }
+  }
+
+  playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
+    const noteName = midiToNoteName(pitch);
+    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
+    const triggerTime = time !== undefined ? time : Tone.now();
+    try {
+      this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
+    } catch {
+      /* ignore scheduling edge cases */
+    }
+  }
+
+  previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
+    }
+  }
+
+  dispose(): void {
+    try {
+      this.synth.dispose();
+    } catch {
+      /* ignore disposal error */
+    }
+    super.dispose();
   }
 }
 
-export class SynthInstrument extends BaseSynthInstrument {
+// 5. Synth Lead (Bright solo synth lead)
+export class SynthLead extends BaseInstrument {
+  public readonly id = 'synth-lead';
+  public readonly name = 'Synth Lead';
+  public readonly category: InstrumentCategory = 'Lead';
+
+  protected synth: Tone.PolySynth<Tone.Synth>;
+
   constructor(initialVolume = 80) {
-    const synth = new Tone.PolySynth(Tone.AMSynth, {
-      harmonicity: 1.5,
-      envelope: { attack: 0.02, decay: 0.5, sustain: 0.6, release: 0.6 },
-    });
-    super(synth, initialVolume);
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'square' },
+        envelope: { attack: 0.01, decay: 0.3, sustain: 0.8, release: 0.4 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.Synth>>();
+    }
+  }
+
+  playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
+    const noteName = midiToNoteName(pitch);
+    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
+    const triggerTime = time !== undefined ? time : Tone.now();
+    try {
+      this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
+    } catch {
+      /* ignore scheduling edge cases */
+    }
+  }
+
+  previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
+    }
+  }
+
+  dispose(): void {
+    try {
+      this.synth.dispose();
+    } catch {
+      /* ignore disposal error */
+    }
+    super.dispose();
   }
 }
 
-export class DrumInstrument implements Instrument {
-  private channel: Tone.Channel;
+// 6. Synth Pad (Warm atmospheric poly synth pad)
+export class SynthPad extends BaseInstrument {
+  public readonly id = 'synth-pad';
+  public readonly name = 'Synth Pad';
+  public readonly category: InstrumentCategory = 'Pad';
+
+  protected synth: Tone.PolySynth<Tone.AMSynth>;
+
+  constructor(initialVolume = 80) {
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.AMSynth, {
+        harmonicity: 1.5,
+        oscillator: { type: 'sine' },
+        envelope: { attack: 0.4, decay: 1.5, sustain: 0.9, release: 1.8 },
+        modulation: { type: 'triangle' },
+        modulationEnvelope: { attack: 0.3, decay: 1.0, sustain: 0.8, release: 1.5 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.AMSynth>>();
+    }
+  }
+
+  playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
+    const noteName = midiToNoteName(pitch);
+    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
+    const triggerTime = time !== undefined ? time : Tone.now();
+    try {
+      this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
+    } catch {
+      /* ignore scheduling edge cases */
+    }
+  }
+
+  previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
+    }
+  }
+
+  dispose(): void {
+    try {
+      this.synth.dispose();
+    } catch {
+      /* ignore disposal error */
+    }
+    super.dispose();
+  }
+}
+
+// 7. Strings Synth (Polyphonic string ensemble)
+export class StringsSynth extends BaseInstrument {
+  public readonly id = 'strings';
+  public readonly name = 'Strings Ensemble';
+  public readonly category: InstrumentCategory = 'Strings';
+
+  protected synth: Tone.PolySynth<Tone.Synth>;
+
+  constructor(initialVolume = 82) {
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'sawtooth' },
+        envelope: { attack: 0.25, decay: 1.5, sustain: 0.85, release: 1.5 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.Synth>>();
+    }
+  }
+
+  playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
+    const noteName = midiToNoteName(pitch);
+    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
+    const triggerTime = time !== undefined ? time : Tone.now();
+    try {
+      this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
+    } catch {
+      /* ignore scheduling edge cases */
+    }
+  }
+
+  previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
+    }
+  }
+
+  dispose(): void {
+    try {
+      this.synth.dispose();
+    } catch {
+      /* ignore disposal error */
+    }
+    super.dispose();
+  }
+}
+
+// 8. Pluck Synth (Percussive short-decay pluck)
+export class PluckSynth extends BaseInstrument {
+  public readonly id = 'pluck';
+  public readonly name = 'Digital Pluck';
+  public readonly category: InstrumentCategory = 'Synth';
+
+  protected synth: Tone.PolySynth<Tone.Synth>;
+
+  constructor(initialVolume = 80) {
+    super(initialVolume);
+    try {
+      this.synth = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.001, decay: 0.25, sustain: 0.0, release: 0.2 },
+      });
+      this.synth.connect(this.channel);
+    } catch {
+      this.synth = createMockSynth<Tone.PolySynth<Tone.Synth>>();
+    }
+  }
+
+  playNote(pitch: number, durationBeats: number, velocity: number, time?: number): void {
+    const noteName = midiToNoteName(pitch);
+    const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
+    const durationSeconds = durationBeats * (60 / Tone.Transport.bpm.value);
+    const triggerTime = time !== undefined ? time : Tone.now();
+    try {
+      this.synth.triggerAttackRelease(noteName, durationSeconds, triggerTime, normVel);
+    } catch {
+      /* ignore scheduling edge cases */
+    }
+  }
+
+  previewNote(pitch: number, durationBeats = 0.5, velocity = 100): void {
+    this.playNote(pitch, durationBeats, velocity, Tone.now());
+  }
+
+  setParameter(name: string, value: number): void {
+    super.setParameter(name, value);
+    if (name === 'attack' || name === 'decay' || name === 'sustain' || name === 'release') {
+      try {
+        this.synth.set({ envelope: { [name]: value } });
+      } catch {
+        /* ignore parameter update error */
+      }
+    }
+  }
+
+  dispose(): void {
+    try {
+      this.synth.dispose();
+    } catch {
+      /* ignore disposal error */
+    }
+    super.dispose();
+  }
+}
+
+// 9. Drum Kit Synth (Multi-element percussive kit)
+export class DrumKitSynth extends BaseInstrument {
+  public readonly id = 'drum-kit';
+  public readonly name = 'Drum Kit';
+  public readonly category: InstrumentCategory = 'Drums';
+
   private kick: Tone.MembraneSynth;
-  private snare: Tone.PolySynth;
+  private snare: Tone.PolySynth<Tone.Synth>;
   private hihat: Tone.NoiseSynth;
 
   constructor(initialVolume = 90) {
-    this.channel = new Tone.Channel({
-      volume: volumeToDb(initialVolume),
-      mute: false,
-      solo: false,
-    }).toDestination();
+    super(initialVolume);
 
-    this.kick = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 4 }).connect(this.channel);
-    this.snare = new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: 'triangle' },
-      envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 },
-    }).connect(this.channel);
-    this.hihat = new Tone.NoiseSynth({
-      noise: { type: 'white' },
-      envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
-    }).connect(this.channel);
+    try {
+      this.kick = new Tone.MembraneSynth({ pitchDecay: 0.05, octaves: 4 });
+      this.snare = new Tone.PolySynth(Tone.Synth, {
+        oscillator: { type: 'triangle' },
+        envelope: { attack: 0.001, decay: 0.2, sustain: 0.01, release: 0.2 },
+      });
+      this.hihat = new Tone.NoiseSynth({
+        noise: { type: 'white' },
+        envelope: { attack: 0.001, decay: 0.05, sustain: 0, release: 0.05 },
+      });
+
+      this.kick.connect(this.channel);
+      this.snare.connect(this.channel);
+      this.hihat.connect(this.channel);
+    } catch {
+      this.kick = createMockSynth<Tone.MembraneSynth>();
+      this.snare = createMockSynth<Tone.PolySynth<Tone.Synth>>();
+      this.hihat = createMockSynth<Tone.NoiseSynth>();
+    }
   }
-
-  async initialize(): Promise<void> {}
 
   playNote(pitch: number, _durationBeats: number, velocity: number, time?: number): void {
     const normVel = Math.max(0.01, Math.min(1.0, velocity / 127));
     const triggerTime = time !== undefined ? time : Tone.now();
 
-    // Map MIDI pitches to drum sounds:
-    // pitch < 40 -> Kick (e.g. C2)
-    // 40 <= pitch < 55 -> Snare / Tom (e.g. E2)
-    // pitch >= 55 -> Hi-Hat (e.g. G2+)
     try {
       if (pitch < 40) {
         this.kick.triggerAttackRelease('C1', '8n', triggerTime, normVel);
@@ -167,7 +532,7 @@ export class DrumInstrument implements Instrument {
         this.hihat.triggerAttackRelease('16n', triggerTime, normVel);
       }
     } catch {
-      // Ignore percussion scheduling edge cases
+      /* ignore scheduling edge cases */
     }
   }
 
@@ -175,31 +540,21 @@ export class DrumInstrument implements Instrument {
     this.playNote(pitch, _durationBeats, velocity, Tone.now());
   }
 
-  setVolume(volumePercent: number): void {
-    this.channel.volume.value = volumeToDb(volumePercent);
-  }
-
-  setMute(muted: boolean): void {
-    this.channel.mute = muted;
-  }
-
-  setSolo(solo: boolean): void {
-    this.channel.solo = solo;
-  }
-
-  setPan(pan: number): void {
-    const clampedPan = Math.max(-1, Math.min(1, pan));
-    this.channel.pan.value = clampedPan;
-  }
-
   dispose(): void {
     try {
       this.kick.dispose();
       this.snare.dispose();
       this.hihat.dispose();
-      this.channel.dispose();
     } catch {
-      // Ignore disposal errors
+      /* ignore disposal error */
     }
+    super.dispose();
   }
 }
+
+// Legacy Phase 4 Instrument Class Aliases for complete backward compatibility:
+export class PianoInstrument extends AcousticPianoSynth {}
+export class GuitarInstrument extends GuitarSynth {}
+export class BassInstrument extends BassSynth {}
+export class SynthInstrument extends SynthLead {}
+export class DrumInstrument extends DrumKitSynth {}

@@ -4,12 +4,12 @@ MelodyForge is a modern web-based AI music composition and arrangement studio de
 
 ---
 
-## 🚀 Phase 1 Architecture & Status
+## 🚀 Architecture & Status
 
-MelodyForge Phase 1 introduces a clean, decoupled full-stack architecture built with Python (FastAPI) and React (TypeScript + Vite).
+MelodyForge features a decoupled full-stack architecture built with Python (FastAPI) and React (TypeScript + Vite + Tone.js).
 
 ```text
-Frontend (React + Vite + TS + Zustand + Tailwind)
+Frontend (React + Vite + TS + Zustand + Tone.js + Tailwind)
        │  REST API (Axios client)
        ▼
 FastAPI Backend (Pydantic v2 + Dependency Injection)
@@ -23,10 +23,47 @@ SQLite Database (Configured for easy PostgreSQL migration)
 
 ---
 
+## 🎹 Advanced Sound & Instrument System (Phase 11)
+
+Phase 11 upgrades the audio synthesis engine into an extensible DAW sound and instrument architecture:
+
+### 1. Instrument Architecture
+Extends `Instrument` interface in `frontend/src/features/audio/types/instrument.ts` and `BaseInstrument` in `frontend/src/features/audio/instruments/Instrument.ts`:
+- **Properties**: `id`, `name`, `category`, `type`, `parameters`.
+- **Methods**: `initialize()`, `playNote()`, `previewNote()`, `setVolume()`, `setPan()`, `setMute()`, `setSolo()`, `setParameter()`, `applyPreset()`, `dispose()`.
+
+### 2. Central Instrument Registry
+`InstrumentRegistry` (`frontend/src/features/audio/instruments/InstrumentRegistry.ts`):
+- Singleton registry managing built-in and custom instruments.
+- Resolves instrument IDs and maps legacy names safely to modern registered instruments.
+- Safe fallback: Automatically defaults to `Acoustic Piano` if an invalid or missing instrument ID is referenced.
+
+### 3. Presets & Preset Manager
+`PresetManager` (`frontend/src/features/audio/presets/PresetManager.ts`):
+- Provides built-in presets across Piano, Keys, Guitar, Bass, Lead, Pad, Strings, Pluck, and Drums categories.
+- Manages custom user preset creation, local persistence, loading, validation, and deletion.
+
+### 4. Sample-Ready Architecture
+`SampleInstrument` (`frontend/src/features/audio/instruments/SampleInstrument.ts`):
+- Designed to support `Tone.Sampler` sample mapping configurations without requiring mandatory external sample downloads.
+- Includes loading states (`idle`, `loading`, `loaded`, `error`) and graceful fallback to synthesized instruments when samples are unpopulated.
+
+### 5. How to Add a New Instrument
+1. Create a new instrument class in `frontend/src/features/audio/instruments/` extending `BaseInstrument`.
+2. Define instrument parameters and override `playNote`, `previewNote`, `setParameter`, and `dispose`.
+3. Register the instrument factory and metadata in `InstrumentRegistry.registerDefaults()`.
+
+### 6. How to Add a New Preset
+1. Open `frontend/src/features/audio/presets/presetDefinitions.ts`.
+2. Add a new `InstrumentPreset` object to `BUILT_IN_PRESETS` with a unique `id`, `name`, target `instrumentId`, `category`, and parameter key-values.
+
+---
+
 ## 🛠️ Technology Stack
 
 ### Frontend
 - **Framework**: React 18+ (Vite, TypeScript strict mode)
+- **Audio Engine**: Tone.js 15+
 - **Styling**: Tailwind CSS (Dark DAW aesthetics)
 - **Routing**: React Router v6
 - **State Management**: Zustand
@@ -40,47 +77,6 @@ SQLite Database (Configured for easy PostgreSQL migration)
 - **Validation**: Pydantic v2
 - **ORM**: SQLAlchemy 2.0+
 - **Database**: SQLite (local) / PostgreSQL ready
-- **Configuration**: `python-dotenv`
-
----
-
-## 📁 Directory Structure
-
-```text
-melodyforge/
-├── frontend/                 # React TypeScript Vite application
-│   └── src/
-│       ├── components/       # Common UI elements & AppLayout
-│       ├── features/         # Feature modules (projects, editor, instruments, timeline, mixer, ai)
-│       ├── pages/            # Dashboard, Projects, Studio pages
-│       ├── services/         # Centralized Axios API client & endpoints
-│       ├── stores/           # Zustand state management
-│       ├── types/            # TypeScript interface definitions
-│       ├── App.tsx
-│       └── main.tsx
-│
-├── backend/                  # FastAPI REST API backend
-│   └── app/
-│       ├── api/              # Route handlers & dependency injection
-│       ├── core/             # App settings & configuration
-│       ├── db/               # SQLAlchemy session & database setup
-│       ├── models/           # Database models (Project)
-│       ├── schemas/          # Request & Response Pydantic models
-│       ├── repositories/     # Data access layer
-│       ├── services/         # Business logic layer
-│       └── main.py           # Application entrypoint
-│
-├── music/                    # Static audio assets directory
-│   ├── instruments/
-│   ├── presets/
-│   └── soundfonts/
-│
-├── projects/                 # Local exported project data / files
-├── docs/                     # Architecture & API documentation
-├── .gitignore
-├── .env.example
-└── README.md
-```
 
 ---
 
@@ -105,8 +101,6 @@ pip install -r requirements.txt
 # Run development server
 uvicorn app.main:app --reload --port 8000
 ```
-Backend API will be running at `http://localhost:8000`.
-Interactive API docs available at `http://localhost:8000/docs`.
 
 ### 3. Frontend Setup & Launch
 ```bash
@@ -117,29 +111,23 @@ npm install
 
 # Start development server
 npm run dev
+
+# Run unit test suite
+npx tsx src/runTests.ts
 ```
-Frontend application will be running at `http://localhost:5173`.
 
 ---
 
-## 🛰️ REST API Endpoints (Phase 1)
+## 📋 Phase Progress
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/health` | Service health status check |
-| `GET` | `/api/projects` | List all projects |
-| `POST` | `/api/projects` | Create a new music project |
-| `GET` | `/api/projects/{id}` | Get project details by ID |
-| `PUT` | `/api/projects/{id}` | Update existing project |
-| `DELETE` | `/api/projects/{id}` | Delete project by ID |
-
----
-
-## 📋 Phase Scope & Roadmap
-
-- [x] **Phase 1 — Foundation, Architecture & Setup**: Core REST API, layered architecture, SQLite database, React SPA layout, dark music studio theme, Project CRUD operations, backend health integration.
-- [ ] **Phase 2 — Music Studio UI Foundation**: DAW timeline interface, track headers, transport bar controls, zoom & pan controls.
-- [ ] **Phase 3 — Instrument & Audio Engine Setup**: Web Audio API synth synth engine, SoundFont loading, note triggering.
-- [ ] **Phase 4 — Piano Roll & Note Editing**: Interactive grid, note placement, velocity editing, quantize logic.
-- [ ] **Phase 5 — MIDI Import/Export**: Standard MIDI file parsing and rendering.
-- [ ] **Phase 6 — AI Composition Assistance**: Melody & chord progression generation algorithms.
+- [x] **Phase 1 — Foundation & Architecture**
+- [x] **Phase 2 — Track & Studio Interface**
+- [x] **Phase 3 — Interactive Piano Roll & Note Editing**
+- [x] **Phase 4 — Audio Engine & Synth Integration**
+- [x] **Phase 5 — Algorithmic Music Composition**
+- [x] **Phase 6 — AI-Assisted Composition Engine**
+- [x] **Phase 7 — Arrangement & Song Structure Engine**
+- [x] **Phase 8 — Standard MIDI & Project Interchange**
+- [x] **Phase 9 — Advanced Arrangement & Automation Engine**
+- [x] **Phase 10 — Smart Arrangement & Musical Intelligence**
+- [x] **Phase 11 — Advanced Sound & Instrument System**

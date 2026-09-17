@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Track, MusicalKey, KeyMode, TimeSignature, InstrumentOption } from '../types/studio';
 import { INITIAL_DEMO_TRACKS, DEFAULT_INSTRUMENTS } from '../constants/studio';
+import { InstrumentParameters } from '../../audio/types/instrument';
+import { PresetManager } from '../../audio/presets/PresetManager';
 
 interface StudioState {
   tracks: Track[];
@@ -20,6 +22,9 @@ interface StudioState {
   toggleMute: (id: string) => void;
   toggleSolo: (id: string) => void;
   setVolume: (id: string, volume: number) => void;
+  setTrackInstrument: (id: string, instrumentId: string) => void;
+  setTrackPreset: (id: string, presetId: string) => void;
+  setTrackParameter: (id: string, paramName: string, value: number) => void;
   setTempo: (tempo: number) => void;
   setKey: (key: MusicalKey) => void;
   setMode: (mode: KeyMode) => void;
@@ -102,6 +107,58 @@ export const useStudioStore = create<StudioState>((set) => ({
     const clampedVol = Math.max(0, Math.min(100, volume));
     set((state) => ({
       tracks: state.tracks.map((t) => (t.id === id ? { ...t, volume: clampedVol } : t)),
+    }));
+  },
+
+  setTrackInstrument: (id: string, instrumentId: string) => {
+    set((state) => {
+      const presetManager = PresetManager.getInstance();
+      const defaultPreset = presetManager.getFallbackPreset(instrumentId);
+      return {
+        tracks: state.tracks.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                instrument: instrumentId,
+                presetId: defaultPreset ? defaultPreset.id : undefined,
+                customParameters: defaultPreset ? { ...defaultPreset.parameters } : undefined,
+              }
+            : t
+        ),
+      };
+    });
+  },
+
+  setTrackPreset: (id: string, presetId: string) => {
+    set((state) => {
+      const presetManager = PresetManager.getInstance();
+      const preset = presetManager.getPreset(presetId);
+      return {
+        tracks: state.tracks.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                presetId,
+                instrument: preset ? preset.instrumentId : t.instrument,
+                customParameters: preset ? { ...preset.parameters } : t.customParameters,
+              }
+            : t
+        ),
+      };
+    });
+  },
+
+  setTrackParameter: (id: string, paramName: string, value: number) => {
+    set((state) => ({
+      tracks: state.tracks.map((t) => {
+        if (t.id !== id) return t;
+        const currentParams: InstrumentParameters = t.customParameters ? { ...t.customParameters } : {};
+        currentParams[paramName] = value;
+        return {
+          ...t,
+          customParameters: currentParams,
+        };
+      }),
     }));
   },
 
