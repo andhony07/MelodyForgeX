@@ -3,6 +3,7 @@ import { Play, Pause, Square, Repeat } from 'lucide-react';
 import { useStudioStore } from '../stores/useStudioStore';
 import { useAudioStore } from '../../audio/stores/useAudioStore';
 import { MusicalKey, KeyMode, TimeSignature } from '../types/studio';
+import { RecordingControls } from '../../recording/components/RecordingControls';
 
 export const TransportBar: React.FC = () => {
   const {
@@ -47,9 +48,9 @@ export const TransportBar: React.FC = () => {
   const padNumber = (num: number) => String(num).padStart(2, '0');
 
   return (
-    <div className="h-14 bg-[#181b24] border-b border-[#2e3444] px-4 flex items-center justify-between select-none font-sans text-xs">
+    <div className="h-14 bg-[#181b24] border-b border-[#2e3444] px-4 flex items-center justify-between select-none font-sans text-xs gap-3 overflow-x-auto">
       {/* Left: Playback controls & Timer */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-shrink-0">
         <div className="flex items-center gap-1 bg-[#0f1117] p-1.5 rounded-lg border border-[#2e3444]">
           <button
             onClick={handlePlayToggle}
@@ -104,8 +105,13 @@ export const TransportBar: React.FC = () => {
         )}
       </div>
 
-      {/* Center/Right: Song Parameters (Tempo, Key, Time Sig) */}
-      <div className="flex items-center gap-3">
+      {/* Center: Audio Recording Controls */}
+      <div className="flex-shrink-0">
+        <RecordingControls />
+      </div>
+
+      {/* Right: Song Parameters (Tempo, Key, Time Sig) */}
+      <div className="flex items-center gap-3 flex-shrink-0">
         {/* Tempo BPM Input */}
         <div className="flex items-center gap-2 bg-[#0f1117] px-3 py-1.5 rounded-lg border border-[#2e3444]">
           <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">BPM</span>

@@ -131,3 +131,14 @@ npx tsx src/runTests.ts
 - [x] **Phase 9 — Advanced Arrangement & Automation Engine**
 - [x] **Phase 10 — Smart Arrangement & Musical Intelligence**
 - [x] **Phase 11 — Advanced Sound & Instrument System**
+- [x] **Phase 12 — Audio Recording & Offline Rendering**
+
+---
+
+## 🎙️ Phase 12 Capabilities: Audio Recording & Offline Rendering
+
+- **Microphone Recording**: Direct input capture using browser `navigator.mediaDevices.getUserMedia` with automatic stream track cleanup.
+- **Master Output Recording**: Live master bus capture via `Tone.Recorder` without interrupting real-time monitoring.
+- **Offline Project Rendering**: Fast non-realtime rendering via `Tone.Offline` supporting Full Song, Selected Section, and Loop Range scopes.
+- **16-bit PCM WAV Export**: Standards-compliant 44.1kHz/48kHz stereo WAV encoding with browser auto-downloads.
+- **Recording Player & Library**: Instant HTML5 preview player, duration counter, track state management, and memory-safe Object URL cleanup.

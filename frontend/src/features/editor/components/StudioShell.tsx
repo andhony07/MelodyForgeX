@@ -6,6 +6,7 @@ import { PianoRollContainer } from './PianoRollContainer';
 import { CompositionPanel } from '../../composition/components/CompositionPanel';
 import { StudioStatusBar } from './StudioStatusBar';
 import { ArrangementToolbar } from '../../arrangement/components/ArrangementToolbar';
+import { RenderingDialog } from '../../recording/components/RenderingDialog';
 import { useStudioStore } from '../stores/useStudioStore';
 import { usePianoRollStore } from '../stores/usePianoRollStore';
 import { useAudioStore } from '../../audio/stores/useAudioStore';
@@ -102,10 +103,13 @@ export const StudioShell: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Composition Engine Panel */}
+        {/* Right: Composition & Audio Library Panel */}
         <CompositionPanel />
       </div>
       <StudioStatusBar />
+
+      {/* Render Dialog Modal */}
+      <RenderingDialog />
     </div>
   );
 };

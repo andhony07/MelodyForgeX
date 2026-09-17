@@ -12,10 +12,11 @@ import { MusicalKey } from '../../editor/types/studio';
 import { AICompositionPanel } from '../../ai/components/AICompositionPanel';
 import { ArrangementAssistantPanel } from '../../arrangement/components/ArrangementAssistantPanel';
 import { InstrumentControlPanel } from '../../editor/components/InstrumentControlPanel';
-import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench, BarChart3, SlidersHorizontal } from 'lucide-react';
+import { RecordingList } from '../../recording/components/RecordingList';
+import { Sparkles, Music, Sliders, RefreshCw, Trash2, Bot, Wrench, BarChart3, SlidersHorizontal, Folder } from 'lucide-react';
 
 export const CompositionPanel: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'assistant' | 'sound'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'manual' | 'assistant' | 'sound' | 'library'>('ai');
 
   const {
     selectedScale,
@@ -141,47 +142,58 @@ export const CompositionPanel: React.FC = () => {
         <div className="flex items-center gap-1 bg-[#0f1117] p-1 rounded-lg border border-[#2e3444]">
           <button
             onClick={() => setActiveTab('ai')}
-            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
               activeTab === 'ai'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <Bot className="w-3.5 h-3.5" />
+            <Bot className="w-3 h-3" />
             <span>AI</span>
           </button>
           <button
             onClick={() => setActiveTab('manual')}
-            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
               activeTab === 'manual'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <Wrench className="w-3.5 h-3.5" />
+            <Wrench className="w-3 h-3" />
             <span>Theory</span>
           </button>
           <button
             onClick={() => setActiveTab('assistant')}
-            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
               activeTab === 'assistant'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <BarChart3 className="w-3.5 h-3.5" />
+            <BarChart3 className="w-3 h-3" />
             <span>Arranger</span>
           </button>
           <button
             onClick={() => setActiveTab('sound')}
-            className={`flex-1 flex items-center justify-center gap-1 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+            className={`flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
               activeTab === 'sound'
                 ? 'bg-indigo-600 text-white shadow-xs'
                 : 'text-gray-400 hover:text-gray-200'
             }`}
           >
-            <SlidersHorizontal className="w-3.5 h-3.5" />
+            <SlidersHorizontal className="w-3 h-3" />
             <span>Sound</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('library')}
+            className={`flex-1 flex items-center justify-center gap-0.5 py-1.5 rounded-md text-[10px] font-semibold transition-all ${
+              activeTab === 'library'
+                ? 'bg-indigo-600 text-white shadow-xs'
+                : 'text-gray-400 hover:text-gray-200'
+            }`}
+          >
+            <Folder className="w-3 h-3" />
+            <span>Library</span>
           </button>
         </div>
 
@@ -192,6 +204,8 @@ export const CompositionPanel: React.FC = () => {
           <ArrangementAssistantPanel />
         ) : activeTab === 'sound' ? (
           <InstrumentControlPanel />
+        ) : activeTab === 'library' ? (
+          <RecordingList />
         ) : (
           <div className="space-y-4">
             {/* Key & Scale Selection */}
